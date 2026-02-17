@@ -1,0 +1,90 @@
+<?php
+
+/**
+ * Sentinel Authentication Configuration
+ *
+ * This file configures the authentication system for your Luxid application.
+ */
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Default Authentication Guard
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default authentication "guard" that will be
+    | used when authenticating users. You may change this value as needed.
+    |
+    */
+    'default' => 'session',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Guards
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define every authentication guard for your application.
+    | A great default configuration has been defined for you which uses
+    | session storage and the user entity provider.
+    |
+    */
+    'guards' => [
+        'session' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        // Future guards can be added here (api, jwt, etc.)
+        // 'api' => [
+        //     'driver' => 'token',
+        //     'provider' => 'users',
+        // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Providers
+    |--------------------------------------------------------------------------
+    |
+    | All authentication guards have a user provider. This defines how the
+    | users are actually retrieved from your database or other storage
+    | mechanisms used by your application.
+    |
+    */
+    'providers' => [
+        'users' => [
+            'entity' => \App\Entities\User::class,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Hashing
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the password hashing configuration. You can
+    | increase the "cost" factor for better security (at the cost of
+    | performance) as your hardware allows.
+    |
+    */
+    'hashing' => [
+        'driver' => 'bcrypt',
+        'bcrypt' => [
+            'rounds' => env('BCRYPT_ROUNDS', 12),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Remember Me
+    |--------------------------------------------------------------------------
+    |
+    | When "remember me" functionality is enabled, users will be remembered
+    | for a longer period. You may adjust the token expiration time here.
+    |
+    */
+    'remember' => [
+        'enabled' => true,
+        'lifetime' => 43200, // 30 days in minutes
+    ],
+];
