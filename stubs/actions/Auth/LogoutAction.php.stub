@@ -1,0 +1,32 @@
+<?php
+
+namespace {{namespace}};
+
+use App\Actions\LuxidAction;
+use Luxid\Nodes\Response;
+
+/**
+ * Logout Action
+ *
+ * Logs out the authenticated user.
+ *
+ * @package {{namespace}}
+ */
+class LogoutAction extends LuxidAction
+{
+    /**
+     * Log out the current user.
+     *
+     * POST /logout
+     *
+     * @return string JSON response
+     */
+    public function index()
+    {
+        auth()->logout();
+
+        return Response::success([
+            'message' => 'Logged out successfully!'
+        ]);
+    }
+}
