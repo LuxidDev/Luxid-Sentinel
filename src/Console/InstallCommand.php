@@ -290,137 +290,124 @@ class InstallCommand extends Command
 
         $target = $this->projectRoot . '/app/Entities/User.php';
         $content = file_get_contents($target);
-        $originalContent = $content;
+
+        // Backup the original file
+        $backupFile = $target . '.backup';
+        copy($target, $backupFile);
+
+        // Parse the class structure
+        $classPattern = '/class\s+User\s+extends\s+UserEntity\s*(implements\s+[^{]+)?\s*\{/';
+        preg_match($classPattern, $content, $classMatches, PREG_OFFSET_CAPTURE);
+
+        if (empty($classMatches)) {
+            $this->error('Could not parse User class structure');
+            return;
+        }
+
+        $classStartPos = $classMatches[0][1];
+        $classOpenBracePos = strpos($content, '{', $classStartPos) + 1;
+
+        // Find the closing brace of the class
+        $braceLevel = 1;
+        $classEndPos = $classOpenBracePos;
+        $length = strlen($content);
+
+        for ($i = $classOpenBracePos; $i < $length; $i++) {
+            if ($content[$i] === '{') {
+                $braceLevel++;
+            } elseif ($content[$i] === '}') {
+                $braceLevel--;
+                if ($braceLevel === 0) {
+                    $classEndPos = $i;
+                    break;
+                }
+            }
+        }
+
+        // Get the class body content
+        $classBody = substr($content, $classOpenBracePos, $classEndPos - $classOpenBracePos);
+        $newClassBody = $classBody;
         $changes = false;
 
-        // 1. Add use statement for Authenticatable if not present
-        if (strpos($content, 'use Luxid\\Sentinel\\Contracts\\Authenticatable;') === false) {
-            // Remove any duplicate use statements first
-            $content = preg_replace('/use Luxid\\\\Sentinel\\\\Contracts\\\\Authenticatable;\s*/', '', $content);
-            $content = preg_replace(
-                '/(namespace App\\\\Entities;\n)/',
-                "$1\nuse Luxid\\Sentinel\\Contracts\\Authenticatable;\n",
-                $content
-            );
+        // 1. Add use statement if not present (outside class)
+        $useStatement = 'use Luxid\\Sentinel\\Contracts\\Authenticatable;';
+        if (strpos($content, $useStatement) === false) {
+            $namespacePos = strpos($content, 'namespace App\\Entities;');
+            $namespaceEndPos = strpos($content, "\n", $namespacePos) + 1;
+            $content = substr_replace($content, "\n" . $useStatement . "\n", $namespaceEndPos, 0);
             $this->info('✓ Added Authenticatable use statement');
             $changes = true;
         }
 
-        // 2. Add implements Authenticatable
+        // 2. Update class signature to include implements
         if (strpos($content, 'implements Authenticatable') === false) {
-            $content = str_replace(
+            $classSignature = substr($content, $classStartPos, $classOpenBracePos - $classStartPos);
+            $newSignature = str_replace(
                 'extends UserEntity',
                 'extends UserEntity implements Authenticatable',
-                $content
+                $classSignature
             );
+            $content = substr_replace($content, $newSignature, $classStartPos, $classOpenBracePos - $classStartPos);
             $this->info('✓ Added Authenticatable interface');
             $changes = true;
         }
 
-        // 3. Add remember_token property if not present
-        if (strpos($content, 'public ?string $remember_token = null;') === false) {
-            // Remove any incorrectly placed remember_token first
-            $content = preg_replace('/public \?string \$remember_token = null;\s*/', '', $content);
+        // 3. Add properties if missing
+        $properties = [
+            'public ?string $remember_token = null;' => 'public string $lastname',
+            'public string $updated_at = \'\';' => 'public string $created_at',
+        ];
 
-            // Add after lastname property
-            $pattern = '/(public string \$lastname = \'\';)/';
-            if (preg_match($pattern, $content)) {
-                $content = preg_replace(
-                    $pattern,
-                    "$1\n    public ?string \$remember_token = null;",
-                    $content
-                );
-                $this->info('✓ Added remember_token property');
-                $changes = true;
-            }
-        }
-
-        // 4. Add updated_at property if not present
-        if (strpos($content, 'public string $updated_at =') === false) {
-            // Remove any incorrectly placed updated_at first
-            $content = preg_replace('/public string \$updated_at = \'\';\s*/', '', $content);
-
-            $pattern = '/(public string \$created_at = \'\';)/';
-            if (preg_match($pattern, $content)) {
-                $content = preg_replace(
-                    $pattern,
-                    "$1\n    public string \$updated_at = '';",
-                    $content
-                );
-                $this->info('✓ Added updated_at property');
-                $changes = true;
-            }
-        }
-
-        // 5. Fix attributes() array
-        $pattern = '/public function attributes\(\): array\s*\{\s*return \[(.*?)\];\s*\}/s';
-        if (preg_match($pattern, $content, $matches)) {
-            $attributes = explode(',', $matches[1]);
-            $attributes = array_map('trim', $attributes);
-            $attributes = array_filter($attributes);
-
-            // Clean up attributes
-            $cleanAttributes = [];
-            foreach ($attributes as $attr) {
-                $attr = trim($attr, "'\" ");
-                if (!empty($attr) && !in_array("'$attr'", $cleanAttributes)) {
-                    $cleanAttributes[] = "'$attr'";
+        foreach ($properties as $property => $after) {
+            if (strpos($classBody, $property) === false) {
+                $afterPos = strpos($classBody, $after);
+                if ($afterPos !== false) {
+                    $lineEndPos = strpos($classBody, "\n", $afterPos) + 1;
+                    $newClassBody = substr_replace($newClassBody, "    $property\n", $lineEndPos, 0);
+                    $this->info("✓ Added $property");
+                    $changes = true;
                 }
             }
+        }
 
-            // Ensure required attributes
-            $required = ["'email'", "'password'", "'firstname'", "'lastname'", "'remember_token'", "'created_at'", "'updated_at'"];
+        // 4. Update attributes method
+        $attrPattern = '/public function attributes\(\): array\s*\{\s*return \[(.*?)\];\s*\}/s';
+        if (preg_match($attrPattern, $classBody, $attrMatches)) {
+            $attrString = $attrMatches[1];
+            $attributes = array_map('trim', explode(',', $attrString));
+            $attributes = array_map(function($attr) {
+                return trim($attr, "'\" ");
+            }, $attributes);
+
+            $required = ['email', 'password', 'firstname', 'lastname', 'remember_token', 'created_at', 'updated_at'];
+            $newAttributes = $attributes;
+
             foreach ($required as $req) {
-                if (!in_array($req, $cleanAttributes)) {
-                    $cleanAttributes[] = $req;
+                if (!in_array($req, $newAttributes)) {
+                    $newAttributes[] = $req;
+                    $this->info("✓ Added '$req' to attributes()");
+                    $changes = true;
                 }
             }
 
-            // Sort for consistency
-            sort($cleanAttributes);
+            // Remove duplicates and sort
+            $newAttributes = array_unique($newAttributes);
+            sort($newAttributes);
 
-            $newAttributes = "return [" . implode(', ', $cleanAttributes) . "];";
-            $newMethod = "    public function attributes(): array\n    {\n        " . $newAttributes . "\n    }";
-            $content = preg_replace($pattern, $newMethod, $content);
-            $this->info('✓ Fixed attributes() array');
-            $changes = true;
+            // Format with single quotes
+            $formattedAttributes = array_map(function($attr) {
+                return "'$attr'";
+            }, $newAttributes);
+
+            $newAttrString = implode(', ', $formattedAttributes);
+            $newAttrMethod = str_replace($attrString, $newAttrString, $attrMatches[0]);
+            $newClassBody = str_replace($attrMatches[0], $newAttrMethod, $newClassBody);
         }
 
-        // 6. Fix save() method - remove duplicates
+        // 5. Update save method
         $savePattern = '/public function save\(\): bool\s*\{.*?\}(?=\s*public|\s*\})/s';
-        preg_match_all($savePattern, $content, $saveMatches);
-
-        if (count($saveMatches[0]) > 1) {
-            // Remove all save methods
-            $content = preg_replace($savePattern, '', $content);
-
-            // Add single proper save method
-            $properSave = <<<'PHP'
-        public function save(): bool
-        {
-            // Hash password before saving if it's plain text
-            if (!empty($this->password) && !password_get_info($this->password)['algo']) {
-                $this->password = password_hash($this->password, PASSWORD_DEFAULT);
-            }
-
-            if ($this->id === 0) {
-                $this->created_at = date('Y-m-d H:i:s');
-            }
-            $this->updated_at = date('Y-m-d H:i:s');
-
-            return parent::save();
-        }
-    PHP;
-            // Add save method before the last method
-            $lastMethodPos = strrpos($content, 'public function');
-            if ($lastMethodPos !== false) {
-                $content = substr_replace($content, $properSave . "\n\n", $lastMethodPos, 0);
-            }
-            $this->info('✓ Fixed save() method (removed duplicates)');
-            $changes = true;
-        } else if (strpos($content, 'public function save') !== false) {
-            // Update existing save method
-            $saveMethod = $saveMatches[0][0] ?? '';
+        if (preg_match($savePattern, $classBody, $saveMatches)) {
+            $saveMethod = $saveMatches[0];
             if (strpos($saveMethod, '$this->updated_at') === false) {
                 $newSaveMethod = <<<'PHP'
         public function save(): bool
@@ -438,14 +425,14 @@ class InstallCommand extends Command
             return parent::save();
         }
     PHP;
-                $content = str_replace($saveMethod, $newSaveMethod, $content);
+                $newClassBody = str_replace($saveMethod, $newSaveMethod, $newClassBody);
                 $this->info('✓ Updated save() method');
                 $changes = true;
             }
         }
 
-        // 7. Add Authenticatable methods if missing (but check for duplicates)
-        $methods = [
+        // 6. Add Authenticatable methods if missing
+        $authMethods = [
             'getAuthIdentifierName',
             'getAuthIdentifier',
             'getAuthPassword',
@@ -456,31 +443,23 @@ class InstallCommand extends Command
         ];
 
         $missingMethods = [];
-        foreach ($methods as $method) {
-            if (substr_count($content, "function $method") > 1) {
-                // Remove duplicates
-                $pattern = '/\n\s*\/\*\*.*?\*\/\s*public function ' . $method . '\(.*?\{.*?\}(?=\s*public|\s*\})/s';
-                $content = preg_replace($pattern, '', $content, 1); // Keep one
-                $this->info("✓ Cleaned up duplicate $method method");
-                $changes = true;
-            } else if (strpos($content, "function $method") === false) {
+        foreach ($authMethods as $method) {
+            if (strpos($classBody, "function $method") === false) {
                 $missingMethods[] = $method;
             }
         }
 
         if (!empty($missingMethods)) {
-            // Remove any existing method blocks that might be malformed
-            $content = preg_replace('/\n\s*\/\*\*.*?\*\/\s*public function (get|set)\w+\(.*?\{.*?\}(?=\s*public|\s*\})/s', '', $content);
-
             $methodsCode = $this->getAuthenticatableMethods();
-            // Add methods before the last closing brace
-            $content = rtrim($content, '}') . "\n" . $methodsCode . "\n}";
+            // Remove the indentation from the methods code
+            $methodsCode = preg_replace('/^    /m', '', $methodsCode);
+            $newClassBody .= "\n" . $methodsCode;
             $this->info('✓ Added Authenticatable interface methods');
             $changes = true;
         }
 
-        // 8. Add toArray() method if not present
-        if (strpos($content, 'public function toArray') === false) {
+        // 7. Add toArray method if missing
+        if (strpos($classBody, 'function toArray') === false) {
             $toArrayMethod = <<<'PHP'
 
         /**
@@ -501,29 +480,16 @@ class InstallCommand extends Command
             ];
         }
     PHP;
-            // Add before the last closing brace
-            $content = rtrim($content, '}') . $toArrayMethod . "\n}";
+            $newClassBody .= $toArrayMethod;
             $this->info('✓ Added toArray() method');
-            $changes = true;
-        } else if (substr_count($content, 'public function toArray') > 1) {
-            // Remove duplicate toArray methods
-            $pattern = '/\n\s*\/\*\*.*?\*\/\s*public function toArray\(.*?\{.*?\}(?=\s*public|\s*\})/s';
-            $content = preg_replace($pattern, '', $content, count($content) - 1);
-            $this->info('✓ Cleaned up duplicate toArray() method');
             $changes = true;
         }
 
-        // 9. Clean up any extra closing braces or malformed code
-        $content = preg_replace('/}\s*}\s*$/', '}', $content); // Fix multiple closing braces
-        $content = preg_replace('/\n{3,}/', "\n\n", $content); // Fix extra newlines
-
-        // Write changes if any
+        // Rebuild the class with updated body
         if ($changes) {
-            // Create backup
-            $backupFile = $target . '.backup';
-            copy($target, $backupFile);
+            $newContent = substr($content, 0, $classOpenBracePos) . $newClassBody . substr($content, $classEndPos);
 
-            if (file_put_contents($target, $content)) {
+            if (file_put_contents($target, $newContent)) {
                 $this->info("✅ User entity updated successfully");
                 $this->line("   Backup created: User.php.backup");
             } else {
@@ -536,6 +502,10 @@ class InstallCommand extends Command
             }
         } else {
             $this->info('✓ User entity already up to date');
+            // Remove backup since no changes
+            if (file_exists($backupFile)) {
+                unlink($backupFile);
+            }
         }
     }
 
@@ -548,77 +518,77 @@ class InstallCommand extends Command
     {
         return <<<'PHP'
 
-    /**
-     * Get the name of the unique identifier for the user.
-     *
-     * @return string
-     */
-    public function getAuthIdentifierName(): string
-    {
-        return static::primaryKey();
-    }
+        /**
+         * Get the name of the unique identifier for the user.
+         *
+         * @return string
+         */
+        public function getAuthIdentifierName(): string
+        {
+            return static::primaryKey();
+        }
 
-    /**
-     * Get the unique identifier for the user.
-     *
-     * @return mixed
-     */
-    public function getAuthIdentifier()
-    {
-        return $this->{static::primaryKey()};
-    }
+        /**
+         * Get the unique identifier for the user.
+         *
+         * @return mixed
+         */
+        public function getAuthIdentifier()
+        {
+            return $this->{static::primaryKey()};
+        }
 
-    /**
-     * Get the password for the user.
-     *
-     * @return string
-     */
-    public function getAuthPassword(): string
-    {
-        return $this->password;
-    }
+        /**
+         * Get the password for the user.
+         *
+         * @return string
+         */
+        public function getAuthPassword(): string
+        {
+            return $this->password;
+        }
 
-    /**
-     * Get the column name where password is stored.
-     *
-     * @return string
-     */
-    public function getAuthPasswordName(): string
-    {
-        return 'password';
-    }
+        /**
+         * Get the column name where password is stored.
+         *
+         * @return string
+         */
+        public function getAuthPasswordName(): string
+        {
+            return 'password';
+        }
 
-    /**
-     * Get the "remember me" token value.
-     *
-     * @return string|null
-     */
-    public function getRememberToken(): ?string
-    {
-        return $this->remember_token;
-    }
+        /**
+         * Get the "remember me" token value.
+         *
+         * @return string|null
+         */
+        public function getRememberToken(): ?string
+        {
+            return $this->remember_token;
+        }
 
-    /**
-     * Set the "remember me" token value.
-     *
-     * @param string|null $value
-     * @return void
-     */
-    public function setRememberToken(?string $value): void
-    {
-        $this->remember_token = $value;
-    }
+        /**
+         * Set the "remember me" token value.
+         *
+         * @param string|null $value
+         * @return void
+         */
+        public function setRememberToken(?string $value): void
+        {
+            $this->remember_token = $value;
+        }
 
-    /**
-     * Get the column name for the "remember me" token.
-     *
-     * @return string
-     */
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-PHP;
+        /**
+         * Get the column name for the "remember me" token.
+         *
+         * @return string
+         */
+        public function getRememberTokenName(): string
+        {
+            return 'remember_token';
+        }
+    PHP;
     }
 
     protected function generateActions(): void
