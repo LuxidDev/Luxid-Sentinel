@@ -7,10 +7,7 @@ namespace Luxid\Sentinel;
 use Luxid\Sentinel\Contracts\Authenticatable;
 
 /**
- * Sentinel facade-like helper.
- *
- * Provides static access to common authentication methods.
- * This complements the auth() helper function.
+ * Sentinel static facade.
  *
  * @package Luxid\Sentinel
  *
@@ -25,11 +22,6 @@ use Luxid\Sentinel\Contracts\Authenticatable;
  */
 class Sentinel
 {
-    /**
-     * The AuthManager instance.
-     *
-     * @var AuthManager|null
-     */
     protected static ?AuthManager $manager = null;
 
     /**
@@ -47,20 +39,19 @@ class Sentinel
      * Get the AuthManager instance.
      *
      * @return AuthManager
-     *
      * @throws \RuntimeException
      */
     public static function getManager(): AuthManager
     {
         if (self::$manager === null) {
-            throw new \RuntimeException('Sentinel not initialized. Make sure SentinelServiceProvider is registered.');
+            throw new \RuntimeException('Sentinel not initialized.');
         }
 
         return self::$manager;
     }
 
     /**
-     * Check if Sentinel has been initialized.
+     * Check if Sentinel is initialized.
      *
      * @return bool
      */
@@ -70,7 +61,7 @@ class Sentinel
     }
 
     /**
-     * Handle dynamic static method calls to the AuthManager.
+     * Handle dynamic static method calls.
      *
      * @param string $method
      * @param array $arguments
