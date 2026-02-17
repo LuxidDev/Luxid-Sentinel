@@ -29,15 +29,23 @@ if (!function_exists('auth')) {
      */
     function auth(?string $guard = null)
     {
-        // Try to get auth manager from Sentinel static registry
-        try {
-            $manager = Sentinel::getManager();
-        } catch (\RuntimeException $e) {
-            throw new RuntimeException(
-                'Auth service not available. Make sure SentinelServiceProvider::boot() was called.',
-                0,
-                $e
-            );
+        static $manager = null;
+
+        if (!Application::$app) {
+            throw new RuntimeException('Application not initialized.');
+        }
+
+        if ($manager === null) {
+            // Try to get auth manager from Sentinel static registry
+            try {
+                $manager = Sentinel::getManager();
+            } catch (\RuntimeException $e) {
+                throw new RuntimeException(
+                    'Auth service not available. Make sure SentinelServiceProvider::boot() was called.',
+                    0,
+                    $e
+                );
+            }
         }
 
         if ($guard !== null) {
