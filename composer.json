@@ -22,9 +22,6 @@
             "src/Support/helpers.php"
         ]
     },
-    "bin": [
-        "bin/sentinel-install"
-    ],
     "extra": {
         "luxid": {
             "providers": [
