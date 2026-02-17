@@ -1,6 +1,6 @@
 <?php
 
-use Luxid\Sentinel\AuthManager;
+use Luxid\Sentinel\Sentinel;
 use Luxid\Foundation\Application;
 
 if (!function_exists('auth')) {
@@ -8,7 +8,9 @@ if (!function_exists('auth')) {
      * Get the available auth instance.
      *
      * @param string|null $guard
-     * @return AuthManager|\Luxid\Sentinel\Contracts\Guard
+     * @return \Luxid\Sentinel\AuthManager|\Luxid\Sentinel\Contracts\Guard
+     *
+     * @throws RuntimeException If auth service is not available
      *
      * @example
      * ```php
@@ -27,13 +29,16 @@ if (!function_exists('auth')) {
      */
     function auth(?string $guard = null)
     {
-        if (!Application::$app || !Application::$app->has('auth')) {
+        // Try to get auth manager from Sentinel static registry
+        try {
+            $manager = Sentinel::getManager();
+        } catch (\RuntimeException $e) {
             throw new RuntimeException(
-                'Auth service not available. Make sure SentinelServiceProvider is registered.'
+                'Auth service not available. Make sure SentinelServiceProvider::boot() was called.',
+                0,
+                $e
             );
         }
-
-        $manager = Application::$app->get('auth');
 
         if ($guard !== null) {
             return $manager->guard($guard);
