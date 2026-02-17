@@ -86,7 +86,16 @@ class InstallCommand extends Command
             $this->line('📋 Next steps:');
             $this->line('   1. Review config/sentinel.php');
             $this->line('   2. Run: php juice db:migrate');
-            $this->line('   3. Test your auth endpoints:');
+            $this->line('   3. Add the RequireAuth middleware to protected routes:');
+            $this->line('');
+            $this->line('      use Luxid\\Sentinel\\Middleware\\RequireAuth;');
+            $this->line('');
+            $this->line('      route("protected")');
+            $this->line('          ->get("/dashboard")');
+            $this->line('          ->uses(DashboardAction::class, "index")');
+            $this->line('          ->with(new RequireAuth(auth(), app()->response));');
+            $this->line('');
+            $this->line('   4. Test your auth endpoints:');
             $this->line('      POST   /register');
             $this->line('      POST   /login');
             $this->line('      POST   /logout');
@@ -282,37 +291,35 @@ class InstallCommand extends Command
 
         $content = file_get_contents($routesFile);
 
-        // Check if routes are already registered
         if (strpos($content, 'Auth\\RegisterAction') !== false) {
-            $this->warning('Auth routes appear to be already registered. Skipping...');
+            $this->warning('Auth routes already registered. Skipping...');
             return;
         }
 
-        // Append auth routes
         $authRoutes = <<<'PHP'
 
-// Authentication Routes (via Sentinel)
-route('auth.register')
-    ->post('/register')
-    ->uses(\App\Actions\Auth\RegisterAction::class, 'index')
-    ->public();
+    // Authentication Routes (Sentinel)
+    route('auth.register')
+        ->post('/register')
+        ->uses(\App\Actions\Auth\RegisterAction::class, 'index')
+        ->public();
 
-route('auth.login')
-    ->post('/login')
-    ->uses(\App\Actions\Auth\LoginAction::class, 'index')
-    ->public();
+    route('auth.login')
+        ->post('/login')
+        ->uses(\App\Actions\Auth\LoginAction::class, 'index')
+        ->public();
 
-route('auth.logout')
-    ->post('/logout')
-    ->uses(\App\Actions\Auth\LogoutAction::class, 'index')
-    ->auth();
+    route('auth.logout')
+        ->post('/logout')
+        ->uses(\App\Actions\Auth\LogoutAction::class, 'index')
+        ->auth();
 
-route('auth.me')
-    ->get('/me')
-    ->uses(\App\Actions\Auth\MeAction::class, 'index')
-    ->auth();
+    route('auth.me')
+        ->get('/me')
+        ->uses(\App\Actions\Auth\MeAction::class, 'index')
+        ->auth();
 
-PHP;
+    PHP;
 
         if (file_put_contents($routesFile, $content . $authRoutes)) {
             $this->info('Routes registered: routes/api.php');
