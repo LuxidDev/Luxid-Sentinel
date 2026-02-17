@@ -9,7 +9,7 @@ use Luxid\Nodes\Response;
  * Me Action
  *
  * Returns the currently authenticated user.
- * Protected by RequireAuth middleware.
+ * Protected by auth() middleware.
  *
  * @package {{namespace}}
  */
@@ -20,11 +20,15 @@ class MeAction extends LuxidAction
      *
      * GET /me
      *
-     * @return string JSON response
+     * @return string
      */
     public function index()
     {
         $user = auth()->user();
+
+        if (!$user) {
+            return Response::error('Not authenticated', null, 401);
+        }
 
         return Response::success([
             'user' => $user->toArray()
