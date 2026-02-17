@@ -2,19 +2,8 @@
 
 use Luxid\Database\Database;
 
-/**
- * Migration: Create users table
- *
- * This migration creates the users table for authentication.
- * Run with: php juice db:migrate
- */
-class {{timestamp}}_create_users_table
+class {{class}}
 {
-    /**
-     * Run the migration.
-     *
-     * @return void
-     */
     public function apply()
     {
         $db = \Luxid\Foundation\Application::$app->db;
@@ -40,11 +29,6 @@ class {{timestamp}}_create_users_table
         }
     }
 
-    /**
-     * Reverse the migration.
-     *
-     * @return void
-     */
     public function down()
     {
         $db = \Luxid\Foundation\Application::$app->db;

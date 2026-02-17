@@ -6,15 +6,24 @@ namespace Luxid\Sentinel\Console;
 
 use Luxid\Console\Command;
 
+/**
+ * Install command for Sentinel authentication package.
+ *
+ * Run with: php juice sentinel:install
+ *
+ * @package Luxid\Sentinel\Console
+ */
 class InstallCommand extends Command
 {
     protected string $description = 'Install Sentinel authentication package';
+
     protected string $stubsPath;
     protected string $projectRoot;
 
     public function __construct()
     {
         parent::__construct();
+
         $this->stubsPath = dirname(__DIR__, 2) . '/stubs';
         $this->projectRoot = $this->getProjectRoot();
     }
@@ -45,7 +54,7 @@ class InstallCommand extends Command
             $this->line('');
             $this->line('📋 Next steps:');
             $this->line('   1. Review config/sentinel.php');
-            $this->line('   2. Run: php juice db:migrate (if not already run)');
+            $this->line('   2. Run: php juice db:migrate');
             $this->line('   3. Test your auth endpoints:');
             $this->line('      POST   /register');
             $this->line('      POST   /login');
@@ -113,12 +122,13 @@ class InstallCommand extends Command
             return;
         }
 
-        // Find the users table migration
+        // Find the users table migration (m00001_create_users_table.php)
         $files = scandir($migrationsPath);
         $usersMigration = null;
 
         foreach ($files as $file) {
-            if (strpos($file, 'create_users_table') !== false) {
+            // Look for the pattern: m00001_create_users_table.php
+            if (preg_match('/^m\d+_create_users_table\.php$/', $file)) {
                 $usersMigration = $file;
                 break;
             }
@@ -140,25 +150,40 @@ class InstallCommand extends Command
         }
 
         // Add remember_token column to the existing migration
+        // Find the position before the closing parenthesis and ENGINE clause
         $pattern = '/(\s*\)\s*ENGINE\s*=\s*InnoDB.*;)/';
-        $replacement = ",\n            remember_token VARCHAR(100) NULL,\n            INDEX idx_remember_token (remember_token)$1";
 
-        $newContent = preg_replace($pattern, $replacement, $content);
+        // The remember_token column definition
+        $rememberTokenColumn = ",\n            remember_token VARCHAR(100) NULL,\n            INDEX idx_remember_token (remember_token)";
+
+        $newContent = preg_replace($pattern, $rememberTokenColumn . '$1', $content);
 
         if ($newContent && $newContent !== $content) {
+            // Backup the original file
+            $backupFile = $migrationFile . '.backup';
+            copy($migrationFile, $backupFile);
+
             if (file_put_contents($migrationFile, $newContent)) {
-                $this->info("Updated migration: {$usersMigration} (added remember_token)");
+                $this->info("✅ Updated migration: {$usersMigration} (added remember_token column)");
+                $this->line("   Backup created: {$usersMigration}.backup");
             } else {
+                // Restore from backup if write fails
+                if (file_exists($backupFile)) {
+                    copy($backupFile, $migrationFile);
+                    unlink($backupFile);
+                }
                 throw new \RuntimeException('Failed to update migration file.');
             }
         }
     }
 
     /**
-     * Create a new migration for users table (fallback)
+     * Create a new migration for users table (fallback if no existing migration found)
      */
     protected function createMigration(): void
     {
+        $this->line('📝 Creating new users table migration...');
+
         $source = $this->stubsPath . '/migrations/create_users_table.php.stub';
 
         $nextNumber = $this->getNextMigrationNumber();
@@ -174,19 +199,22 @@ class InstallCommand extends Command
 
         $content = file_get_contents($source);
 
-        $content = str_replace(
-            ['{{class}}'],
-            ['m' . str_pad((string)$nextNumber, 5, '0', STR_PAD_LEFT) . '_create_users_table'],
-            $content
-        );
+        // Replace the class name placeholder
+        $className = 'm' . str_pad(strval($nextNumber), 5, '0', STR_PAD_LEFT) . '_create_users_table';
+        $content = str_replace('{{class}}', $className, $content);
 
         if (file_put_contents($target, $content)) {
-            $this->info("Migration published: migrations/{$filename}");
+            $this->info("✅ Migration created: migrations/{$filename}");
         } else {
-            throw new \RuntimeException('Failed to publish migration file.');
+            throw new \RuntimeException('Failed to create migration file.');
         }
     }
 
+    /**
+     * Get the next migration number based on existing migrations.
+     *
+     * @return int
+     */
     protected function getNextMigrationNumber(): int
     {
         $migrationsPath = $this->projectRoot . '/migrations';
@@ -221,30 +249,7 @@ class InstallCommand extends Command
         $target = $targetDir . '/User.php';
 
         if (file_exists($target) && !$this->shouldForce()) {
-            $this->warning('User entity already exists. Updating to add Authenticatable interface...');
-
-            // Check if the file already implements Authenticatable
-            $content = file_get_contents($target);
-            if (strpos($content, 'implements Authenticatable') === false) {
-                // Add the interface
-                $content = str_replace(
-                    'extends UserEntity',
-                    'extends UserEntity implements \Luxid\Sentinel\Contracts\Authenticatable',
-                    $content
-                );
-
-                // Add required methods if they don't exist
-                if (strpos($content, 'getAuthIdentifierName') === false) {
-                    // Append methods to the file
-                    $methods = $this->getAuthenticatableMethods();
-                    $content = rtrim($content, '}') . $methods . "\n}";
-                }
-
-                file_put_contents($target, $content);
-                $this->info('Updated User entity with Authenticatable interface');
-            } else {
-                $this->warning('User entity already implements Authenticatable. Skipping...');
-            }
+            $this->warning('User entity already exists. Skipping...');
             return;
         }
 
@@ -259,47 +264,6 @@ class InstallCommand extends Command
         } else {
             throw new \RuntimeException('Failed to generate User entity.');
         }
-    }
-
-    protected function getAuthenticatableMethods(): string
-    {
-        return <<<'PHP'
-
-    public function getAuthIdentifierName(): string
-    {
-        return static::primaryKey();
-    }
-
-    public function getAuthIdentifier()
-    {
-        return $this->{static::primaryKey()};
-    }
-
-    public function getAuthPassword(): string
-    {
-        return $this->password;
-    }
-
-    public function getAuthPasswordName(): string
-    {
-        return 'password';
-    }
-
-    public function getRememberToken(): ?string
-    {
-        return $this->remember_token ?? null;
-    }
-
-    public function setRememberToken(?string $value): void
-    {
-        $this->remember_token = $value;
-    }
-
-    public function getRememberTokenName(): string
-    {
-        return 'remember_token';
-    }
-PHP;
     }
 
     protected function generateActions(): void
