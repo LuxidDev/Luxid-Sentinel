@@ -12,8 +12,21 @@ use Luxid\Sentinel\Registry;
 use Luxid\Sentinel\Middleware\RequireAuth;
 use Luxid\Sentinel\Console\InstallCommand;
 
+/**
+ * Sentinel service provider.
+ *
+ * Registers authentication services with Luxid.
+ *
+ * @package Luxid\Sentinel\Providers
+ */
 class SentinelServiceProvider
 {
+    /**
+     * Register services.
+     *
+     * @param Application $app
+     * @return void
+     */
     public function register(Application $app): void
     {
         $this->registerConfig($app);
@@ -23,6 +36,12 @@ class SentinelServiceProvider
         $this->registerCommands();
     }
 
+    /**
+     * Bootstrap services.
+     *
+     * @param Application $app
+     * @return void
+     */
     public function boot(Application $app): void
     {
         if (isset($GLOBALS['sentinel_auth_manager'])) {
@@ -32,6 +51,12 @@ class SentinelServiceProvider
         $this->loadHelpers();
     }
 
+    /**
+     * Register configuration.
+     *
+     * @param Application $app
+     * @return void
+     */
     protected function registerConfig(Application $app): void
     {
         $config = [
@@ -58,19 +83,41 @@ class SentinelServiceProvider
         $GLOBALS['sentinel_config'] = $config;
     }
 
+    /**
+     * Register password hasher.
+     *
+     * @param Application $app
+     * @return void
+     */
     protected function registerPasswordHasher(Application $app): void
     {
-        $GLOBALS['sentinel_hasher'] = new PasswordHasher();
+        $hasher = new PasswordHasher();
+        $GLOBALS['sentinel_hasher'] = $hasher;
+        Registry::register('hasher', $hasher);
     }
 
+    /**
+     * Register auth manager.
+     *
+     * @param Application $app
+     * @return void
+     */
     protected function registerAuthManager(Application $app): void
     {
         $config = $GLOBALS['sentinel_config'] ?? [];
         $hasher = $GLOBALS['sentinel_hasher'] ?? new PasswordHasher();
 
-        $GLOBALS['sentinel_auth_manager'] = new AuthManager($app, $hasher, $config);
+        $authManager = new AuthManager($app, $hasher, $config);
+        $GLOBALS['sentinel_auth_manager'] = $authManager;
+        Registry::register('auth', $authManager);
     }
 
+    /**
+     * Register middleware.
+     *
+     * @param Application $app
+     * @return void
+     */
     protected function registerMiddleware(Application $app): void
     {
         $authManager = $GLOBALS['sentinel_auth_manager'] ?? null;
@@ -79,7 +126,9 @@ class SentinelServiceProvider
             throw new \RuntimeException('Auth manager not initialized');
         }
 
-        $GLOBALS['sentinel_middleware_require_auth'] = new RequireAuth($authManager, $app->response);
+        $middleware = new RequireAuth($authManager, $app->response);
+        $GLOBALS['sentinel_middleware_require_auth'] = $middleware;
+        Registry::register('middleware.auth', $middleware);
     }
 
     /**
@@ -94,11 +143,14 @@ class SentinelServiceProvider
             return new InstallCommand();
         });
 
-        // Register other services if needed
-        Registry::register('hasher', $GLOBALS['sentinel_hasher'] ?? null);
-        Registry::register('auth', $GLOBALS['sentinel_auth_manager'] ?? null);
+        // Register other commands here as needed
     }
 
+    /**
+     * Load helper functions.
+     *
+     * @return void
+     */
     protected function loadHelpers(): void
     {
         // helpers.php is autoloaded via composer.json

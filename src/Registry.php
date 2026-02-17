@@ -27,7 +27,7 @@ class Registry
     /**
      * Register a command.
      *
-     * @param string $name Command name
+     * @param string $name Command name (e.g., 'sentinel:install')
      * @param callable $factory Factory that returns the command instance
      * @return void
      */
@@ -94,5 +94,17 @@ class Registry
     public static function getCommandNames(): array
     {
         return array_keys(self::$commands);
+    }
+
+    /**
+     * Clear all registered commands and services.
+     * Useful for testing.
+     *
+     * @return void
+     */
+    public static function clear(): void
+    {
+        self::$commands = [];
+        self::$services = [];
     }
 }
