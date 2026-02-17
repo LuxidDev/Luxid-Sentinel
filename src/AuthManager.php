@@ -169,10 +169,19 @@ class AuthManager
             throw new RuntimeException("Auth guard [{$name}] is not defined.");
         }
 
-        $provider = $config['provider'] ?? $this->config['providers']['users']['entity'] ?? null;
+        // Get the provider name from the guard config (defaults to 'users')
+        $providerName = $config['provider'] ?? 'users';
+
+        // Get the actual entity class from the providers config
+        $provider = $this->config['providers'][$providerName]['entity'] ?? null;
 
         if ($provider === null) {
-            throw new RuntimeException("No provider defined for guard [{$name}].");
+            throw new RuntimeException("No provider entity defined for [{$providerName}].");
+        }
+
+        // Verify the provider class exists
+        if (!class_exists($provider)) {
+            throw new RuntimeException("Provider class [{$provider}] does not exist.");
         }
 
         return match ($config['driver'] ?? 'session') {
