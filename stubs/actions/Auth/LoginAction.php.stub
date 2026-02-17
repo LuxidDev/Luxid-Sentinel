@@ -1,0 +1,59 @@
+<?php
+
+namespace {{namespace}};
+
+use {{userClass}};
+use App\Actions\LuxidAction;
+use Luxid\Nodes\Request;
+use Luxid\Nodes\Response;
+
+/**
+ * Login Action
+ *
+ * Handles user authentication.
+ *
+ * @package {{namespace}}
+ */
+class LoginAction extends LuxidAction
+{
+    /**
+     * Authenticate a user.
+     *
+     * POST /login
+     *
+     * @return string JSON response
+     */
+    public function index()
+    {
+        // Get credentials
+        $data = Request::input();
+
+        // Validate required fields
+        if (empty($data['email'])) {
+            return Response::error('Email is required.', null, 422);
+        }
+
+        if (empty($data['password'])) {
+            return Response::error('Password is required.', null, 422);
+        }
+
+        // Attempt login
+        $credentials = [
+            'email' => $data['email'],
+            'password' => $data['password'],
+        ];
+
+        $remember = !empty($data['remember']);
+
+        if (auth()->attempt($credentials, $remember)) {
+            $user = auth()->user();
+
+            return Response::success([
+                'user' => $user->toArray(),
+                'message' => 'Login successful!'
+            ]);
+        }
+
+        return Response::error('Invalid credentials.', null, 401);
+    }
+}
