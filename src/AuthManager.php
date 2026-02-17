@@ -15,7 +15,7 @@ use RuntimeException;
  * Primary interface for authentication operations in your application.
  * Provides a clean API for login, logout, user retrieval, and authentication checks.
  *
- * @package Luxid\Sentinel
+ * @method \App\Entities\User|null user()
  */
 class AuthManager
 {
