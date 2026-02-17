@@ -53,7 +53,7 @@ return [
     */
     'providers' => [
         'users' => [
-            'entity' => \App\Entities\User::class,
+            'entity' => {{userClass}}::class,
         ],
     ],
 
@@ -70,7 +70,7 @@ return [
     'hashing' => [
         'driver' => 'bcrypt',
         'bcrypt' => [
-            'rounds' => env('BCRYPT_ROUNDS', 12),
+            'rounds' => $_ENV['BCRYPT_ROUNDS'] ?? 12,
         ],
     ],
 
