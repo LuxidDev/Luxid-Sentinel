@@ -30,7 +30,10 @@
         "luxid": {
             "providers": [
                 "Luxid\\Sentinel\\Providers\\SentinelServiceProvider"
-            ]
+            ],
+            "commands": {
+                "sentinel:install": "Luxid\\Sentinel\\Console\\InstallCommand"
+            }
         }
     },
     "minimum-stability": "dev",
