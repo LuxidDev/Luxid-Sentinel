@@ -1,0 +1,220 @@
+<?php
+
+namespace {{namespace}};
+
+use Luxid\Sentinel\Contracts\Authenticatable;
+use Luxid\ORM\UserEntity;
+
+/**
+ * User Entity
+ *
+ * Represents a user in the system. Implements Authenticatable contract
+ * for integration with Sentinel authentication.
+ *
+ * @property int $id
+ * @property string $email
+ * @property string $password
+ * @property string $firstname
+ * @property string $lastname
+ * @property string|null $remember_token
+ * @property string $created_at
+ * @property string $updated_at
+ */
+class User extends UserEntity implements Authenticatable
+{
+    public int $id = 0;
+    public string $email = '';
+    public string $password = '';
+    public string $firstname = '';
+    public string $lastname = '';
+    public ?string $remember_token = null;
+    public string $created_at = '';
+    public string $updated_at = '';
+
+    /**
+     * Get the table name for this entity.
+     *
+     * @return string
+     */
+    public static function tableName(): string
+    {
+        return '{{tableName}}';
+    }
+
+    /**
+     * Get the primary key column name.
+     *
+     * @return string
+     */
+    public static function primaryKey(): string
+    {
+        return '{{primaryKey}}';
+    }
+
+    /**
+     * Get the attributes that are mass assignable.
+     *
+     * @return array
+     */
+    public function attributes(): array
+    {
+        return ['email', 'password', 'firstname', 'lastname', 'remember_token', 'created_at', 'updated_at'];
+    }
+
+    /**
+     * Validation rules for this entity.
+     *
+     * @return array
+     */
+    public function rules(): array
+    {
+        return [
+            'email' => [
+                self::RULE_REQUIRED,
+                self::RULE_EMAIL,
+                [self::RULE_UNIQUE, 'class' => self::class]
+            ],
+            'password' => [
+                self::RULE_REQUIRED,
+                [self::RULE_MIN, 'min' => 8]
+            ],
+            'firstname' => [self::RULE_REQUIRED],
+            'lastname' => [self::RULE_REQUIRED],
+        ];
+    }
+
+    /**
+     * Field labels for validation messages.
+     *
+     * @return array
+     */
+    public function labels(): array
+    {
+        return [
+            'email' => 'Email Address',
+            'password' => 'Password',
+            'firstname' => 'First Name',
+            'lastname' => 'Last Name',
+        ];
+    }
+
+    /**
+     * Get the display name for the user.
+     *
+     * @return string
+     */
+    public function getDisplayName(): string
+    {
+        return trim($this->firstname . ' ' . $this->lastname);
+    }
+
+    /**
+     * Save the user to the database.
+     * Automatically hashes password if it's plain text.
+     *
+     * @return bool
+     */
+    public function save(): bool
+    {
+        // Hash password before saving if it's plain text
+        if (!empty($this->password) && !password_get_info($this->password)['algo']) {
+            $this->password = password_hash($this->password, PASSWORD_DEFAULT);
+        }
+
+        if ($this->id === 0) {
+            $this->created_at = date('Y-m-d H:i:s');
+        }
+        $this->updated_at = date('Y-m-d H:i:s');
+
+        return parent::save();
+    }
+
+    /**
+     * Get the name of the unique identifier for the user.
+     *
+     * @return string
+     */
+    public function getAuthIdentifierName(): string
+    {
+        return static::primaryKey();
+    }
+
+    /**
+     * Get the unique identifier for the user.
+     *
+     * @return mixed
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->{static::primaryKey()};
+    }
+
+    /**
+     * Get the password for the user.
+     *
+     * @return string
+     */
+    public function getAuthPassword(): string
+    {
+        return $this->password;
+    }
+
+    /**
+     * Get the column name where password is stored.
+     *
+     * @return string
+     */
+    public function getAuthPasswordName(): string
+    {
+        return 'password';
+    }
+
+    /**
+     * Get the "remember me" token value.
+     *
+     * @return string|null
+     */
+    public function getRememberToken(): ?string
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * Set the "remember me" token value.
+     *
+     * @param string|null $value
+     * @return void
+     */
+    public function setRememberToken(?string $value): void
+    {
+        $this->remember_token = $value;
+    }
+
+    /**
+     * Get the column name for the "remember me" token.
+     *
+     * @return string
+     */
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
+    }
+
+    /**
+     * Convert user to array for API responses.
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'email' => $this->email,
+            'firstname' => $this->firstname,
+            'lastname' => $this->lastname,
+            'display_name' => $this->getDisplayName(),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
+    }
+}
