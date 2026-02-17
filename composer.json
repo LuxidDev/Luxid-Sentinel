@@ -1,0 +1,38 @@
+{
+    "name": "luxid/sentinel",
+    "description": "Session-based authentication package for Luxid PHP Framework",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["luxid", "authentication", "auth", "session", "guard", "sentinel"],
+    "version": "0.1.0",
+    "authors": [
+        {
+            "name": "Jhay",
+            "email": "jhay@luxid.dev"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "luxid/engine": "^0.4.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Luxid\\Sentinel\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "bin": [
+        "bin/sentinel-install"
+    ],
+    "extra": {
+        "luxid": {
+            "providers": [
+                "Luxid\\Sentinel\\Providers\\SentinelServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
