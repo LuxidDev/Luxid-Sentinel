@@ -1,0 +1,66 @@
+<?php
+
+namespace {{namespace}};
+
+use {{userClass}};
+use App\Actions\LuxidAction;
+use Luxid\Nodes\Request;
+use Luxid\Nodes\Response;
+
+/**
+ * Register Action
+ *
+ * Handles new user registration.
+ *
+ * @package {{namespace}}
+ */
+class RegisterAction extends LuxidAction
+{
+    /**
+     * Register a new user.
+     *
+     * POST /register
+     *
+     * @return string JSON response
+     */
+    public function index()
+    {
+        // Get request data
+        $data = Request::input();
+
+        // Validate required fields
+        $required = ['email', 'password', 'firstname', 'lastname'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                return Response::error("The {$field} field is required.", null, 422);
+            }
+        }
+
+        // Create new user
+        $user = new User();
+        $user->loadData([
+            'email' => $data['email'],
+            'password' => $data['password'], // Will be hashed in save()
+            'firstname' => $data['firstname'],
+            'lastname' => $data['lastname'],
+        ]);
+
+        // Validate and save
+        if (!$user->validate()) {
+            return Response::error('Validation failed', $user->errors, 422);
+        }
+
+        if (!$user->save()) {
+            return Response::error('Failed to create user', null, 500);
+        }
+
+        // Log the user in automatically
+        auth()->login($user);
+
+        // Return success response
+        return Response::success([
+            'user' => $user->toArray(),
+            'message' => 'Registration successful!'
+        ], 201);
+    }
+}
