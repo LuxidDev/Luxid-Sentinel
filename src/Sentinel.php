@@ -50,13 +50,23 @@ class Sentinel
      *
      * @throws \RuntimeException
      */
-    protected static function getManager(): AuthManager
+    public static function getManager(): AuthManager
     {
         if (self::$manager === null) {
             throw new \RuntimeException('Sentinel not initialized. Make sure SentinelServiceProvider is registered.');
         }
 
         return self::$manager;
+    }
+
+    /**
+     * Check if Sentinel has been initialized.
+     *
+     * @return bool
+     */
+    public static function isInitialized(): bool
+    {
+        return self::$manager !== null;
     }
 
     /**
