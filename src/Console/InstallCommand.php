@@ -286,6 +286,8 @@ class InstallCommand extends Command
      */
     protected function updateUserEntity(): void
     {
+        $this->line('👤 Updating User entity...');
+
         $target = $this->projectRoot . '/app/Entities/User.php';
         $content = file_get_contents($target);
         $originalContent = $content;
@@ -293,6 +295,8 @@ class InstallCommand extends Command
 
         // 1. Add use statement for Authenticatable if not present
         if (strpos($content, 'use Luxid\\Sentinel\\Contracts\\Authenticatable;') === false) {
+            // Remove any duplicate use statements first
+            $content = preg_replace('/use Luxid\\\\Sentinel\\\\Contracts\\\\Authenticatable;\s*/', '', $content);
             $content = preg_replace(
                 '/(namespace App\\\\Entities;\n)/',
                 "$1\nuse Luxid\\Sentinel\\Contracts\\Authenticatable;\n",
@@ -313,8 +317,11 @@ class InstallCommand extends Command
             $changes = true;
         }
 
-        // 3. Add remember_token property
+        // 3. Add remember_token property if not present
         if (strpos($content, 'public ?string $remember_token = null;') === false) {
+            // Remove any incorrectly placed remember_token first
+            $content = preg_replace('/public \?string \$remember_token = null;\s*/', '', $content);
+
             // Add after lastname property
             $pattern = '/(public string \$lastname = \'\';)/';
             if (preg_match($pattern, $content)) {
@@ -330,6 +337,9 @@ class InstallCommand extends Command
 
         // 4. Add updated_at property if not present
         if (strpos($content, 'public string $updated_at =') === false) {
+            // Remove any incorrectly placed updated_at first
+            $content = preg_replace('/public string \$updated_at = \'\';\s*/', '', $content);
+
             $pattern = '/(public string \$created_at = \'\';)/';
             if (preg_match($pattern, $content)) {
                 $content = preg_replace(
@@ -342,28 +352,99 @@ class InstallCommand extends Command
             }
         }
 
-        // 5. Update attributes() array to include remember_token and updated_at
-        if (preg_match('/public function attributes\(\): array\s*\{\s*return \[(.*?)\];\s*\}/s', $content, $matches)) {
+        // 5. Fix attributes() array
+        $pattern = '/public function attributes\(\): array\s*\{\s*return \[(.*?)\];\s*\}/s';
+        if (preg_match($pattern, $content, $matches)) {
             $attributes = explode(',', $matches[1]);
             $attributes = array_map('trim', $attributes);
-            $originalAttributes = $attributes;
+            $attributes = array_filter($attributes);
 
-            if (!in_array("'remember_token'", $attributes)) {
-                $attributes[] = "'remember_token'";
-            }
-            if (!in_array("'updated_at'", $attributes)) {
-                $attributes[] = "'updated_at'";
+            // Clean up attributes
+            $cleanAttributes = [];
+            foreach ($attributes as $attr) {
+                $attr = trim($attr, "'\" ");
+                if (!empty($attr) && !in_array("'$attr'", $cleanAttributes)) {
+                    $cleanAttributes[] = "'$attr'";
+                }
             }
 
-            if ($attributes !== $originalAttributes) {
-                $newAttributes = "return [" . implode(', ', $attributes) . "];";
-                $content = str_replace($matches[0], "    public function attributes(): array\n    {\n        " . $newAttributes . "\n    }", $content);
-                $this->info('✓ Updated attributes() array');
+            // Ensure required attributes
+            $required = ["'email'", "'password'", "'firstname'", "'lastname'", "'remember_token'", "'created_at'", "'updated_at'"];
+            foreach ($required as $req) {
+                if (!in_array($req, $cleanAttributes)) {
+                    $cleanAttributes[] = $req;
+                }
+            }
+
+            // Sort for consistency
+            sort($cleanAttributes);
+
+            $newAttributes = "return [" . implode(', ', $cleanAttributes) . "];";
+            $newMethod = "    public function attributes(): array\n    {\n        " . $newAttributes . "\n    }";
+            $content = preg_replace($pattern, $newMethod, $content);
+            $this->info('✓ Fixed attributes() array');
+            $changes = true;
+        }
+
+        // 6. Fix save() method - remove duplicates
+        $savePattern = '/public function save\(\): bool\s*\{.*?\}(?=\s*public|\s*\})/s';
+        preg_match_all($savePattern, $content, $saveMatches);
+
+        if (count($saveMatches[0]) > 1) {
+            // Remove all save methods
+            $content = preg_replace($savePattern, '', $content);
+
+            // Add single proper save method
+            $properSave = <<<'PHP'
+        public function save(): bool
+        {
+            // Hash password before saving if it's plain text
+            if (!empty($this->password) && !password_get_info($this->password)['algo']) {
+                $this->password = password_hash($this->password, PASSWORD_DEFAULT);
+            }
+
+            if ($this->id === 0) {
+                $this->created_at = date('Y-m-d H:i:s');
+            }
+            $this->updated_at = date('Y-m-d H:i:s');
+
+            return parent::save();
+        }
+    PHP;
+            // Add save method before the last method
+            $lastMethodPos = strrpos($content, 'public function');
+            if ($lastMethodPos !== false) {
+                $content = substr_replace($content, $properSave . "\n\n", $lastMethodPos, 0);
+            }
+            $this->info('✓ Fixed save() method (removed duplicates)');
+            $changes = true;
+        } else if (strpos($content, 'public function save') !== false) {
+            // Update existing save method
+            $saveMethod = $saveMatches[0][0] ?? '';
+            if (strpos($saveMethod, '$this->updated_at') === false) {
+                $newSaveMethod = <<<'PHP'
+        public function save(): bool
+        {
+            // Hash password before saving if it's plain text
+            if (!empty($this->password) && !password_get_info($this->password)['algo']) {
+                $this->password = password_hash($this->password, PASSWORD_DEFAULT);
+            }
+
+            if ($this->id === 0) {
+                $this->created_at = date('Y-m-d H:i:s');
+            }
+            $this->updated_at = date('Y-m-d H:i:s');
+
+            return parent::save();
+        }
+    PHP;
+                $content = str_replace($saveMethod, $newSaveMethod, $content);
+                $this->info('✓ Updated save() method');
                 $changes = true;
             }
         }
 
-        // 6. Add Authenticatable methods if missing
+        // 7. Add Authenticatable methods if missing (but check for duplicates)
         $methods = [
             'getAuthIdentifierName',
             'getAuthIdentifier',
@@ -376,74 +457,65 @@ class InstallCommand extends Command
 
         $missingMethods = [];
         foreach ($methods as $method) {
-            if (strpos($content, "function $method") === false) {
+            if (substr_count($content, "function $method") > 1) {
+                // Remove duplicates
+                $pattern = '/\n\s*\/\*\*.*?\*\/\s*public function ' . $method . '\(.*?\{.*?\}(?=\s*public|\s*\})/s';
+                $content = preg_replace($pattern, '', $content, 1); // Keep one
+                $this->info("✓ Cleaned up duplicate $method method");
+                $changes = true;
+            } else if (strpos($content, "function $method") === false) {
                 $missingMethods[] = $method;
             }
         }
 
         if (!empty($missingMethods)) {
+            // Remove any existing method blocks that might be malformed
+            $content = preg_replace('/\n\s*\/\*\*.*?\*\/\s*public function (get|set)\w+\(.*?\{.*?\}(?=\s*public|\s*\})/s', '', $content);
+
             $methodsCode = $this->getAuthenticatableMethods();
-            // Remove the last closing brace and append methods
+            // Add methods before the last closing brace
             $content = rtrim($content, '}') . "\n" . $methodsCode . "\n}";
             $this->info('✓ Added Authenticatable interface methods');
             $changes = true;
-        }
-
-        // 7. Update save() method to handle timestamps
-        if (preg_match('/public function save\(\): bool\s*\{.*?\}/s', $content, $saveMatch)) {
-            $saveMethod = $saveMatch[0];
-
-            if (strpos($saveMethod, '$this->updated_at') === false) {
-                // Create updated save method
-                $newSaveMethod = <<<'PHP'
-    public function save(): bool
-    {
-        // Hash password before saving if it's plain text
-        if (!empty($this->password) && !password_get_info($this->password)['algo']) {
-            $this->password = password_hash($this->password, PASSWORD_DEFAULT);
-        }
-
-        if ($this->id === 0) {
-            $this->created_at = date('Y-m-d H:i:s');
-        }
-        $this->updated_at = date('Y-m-d H:i:s');
-
-        return parent::save();
-    }
-PHP;
-                $content = str_replace($saveMethod, $newSaveMethod, $content);
-                $this->info('✓ Updated save() method with timestamps');
-                $changes = true;
-            }
         }
 
         // 8. Add toArray() method if not present
         if (strpos($content, 'public function toArray') === false) {
             $toArrayMethod = <<<'PHP'
 
-    /**
-     * Convert user to array for API responses.
-     *
-     * @return array
-     */
-    public function toArray(): array
-    {
-        return [
-            'id' => $this->id,
-            'email' => $this->email,
-            'firstname' => $this->firstname,
-            'lastname' => $this->lastname,
-            'display_name' => $this->getDisplayName(),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-        ];
-    }
-PHP;
+        /**
+         * Convert user to array for API responses.
+         *
+         * @return array
+         */
+        public function toArray(): array
+        {
+            return [
+                'id' => $this->id,
+                'email' => $this->email,
+                'firstname' => $this->firstname,
+                'lastname' => $this->lastname,
+                'display_name' => $this->getDisplayName(),
+                'created_at' => $this->created_at,
+                'updated_at' => $this->updated_at,
+            ];
+        }
+    PHP;
             // Add before the last closing brace
             $content = rtrim($content, '}') . $toArrayMethod . "\n}";
             $this->info('✓ Added toArray() method');
             $changes = true;
+        } else if (substr_count($content, 'public function toArray') > 1) {
+            // Remove duplicate toArray methods
+            $pattern = '/\n\s*\/\*\*.*?\*\/\s*public function toArray\(.*?\{.*?\}(?=\s*public|\s*\})/s';
+            $content = preg_replace($pattern, '', $content, count($content) - 1);
+            $this->info('✓ Cleaned up duplicate toArray() method');
+            $changes = true;
         }
+
+        // 9. Clean up any extra closing braces or malformed code
+        $content = preg_replace('/}\s*}\s*$/', '}', $content); // Fix multiple closing braces
+        $content = preg_replace('/\n{3,}/', "\n\n", $content); // Fix extra newlines
 
         // Write changes if any
         if ($changes) {
