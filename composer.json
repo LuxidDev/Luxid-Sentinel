@@ -22,6 +22,14 @@
             "src/Support/helpers.php"
         ]
     },
+    "scripts": {
+        "post-install-cmd": [
+            "@php bin/generate-bridge.php"
+        ],
+        "post-update-cmd": [
+            "@php bin/generate-bridge.php"
+        ]
+    },
     "extra": {
         "luxid": {
             "providers": [
