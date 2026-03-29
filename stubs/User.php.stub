@@ -21,71 +21,71 @@ class User extends UserEntity implements Authenticatable
 {
     #[Column(primary: true, autoIncrement: true)]
     public int $id = 0;
-    
+
     #[Column]
     #[Required]
     #[Email]
     #[Unique]
     public string $email = '';
-    
+
     #[Column(hidden: true)]
     #[Required]
     #[Min(8)]
     public string $password = '';
-    
+
     #[Column]
     #[Required]
     public string $firstname = '';
-    
+
     #[Column]
     #[Required]
     public string $lastname = '';
-    
+
     #[Column(nullable: true)]
     public ?string $remember_token = null;
-    
+
     #[Column(autoCreate: true)]
     public string $created_at = '';
-    
+
     #[Column(autoCreate: true, autoUpdate: true)]
     public string $updated_at = '';
-    
+
     public function getDisplayName(): string
     {
         return trim($this->firstname . ' ' . $this->lastname) ?: $this->email;
     }
-    
+
     // Authenticatable interface methods
     public function getAuthIdentifierName(): string
     {
         return 'id';
     }
-    
+
     public function getAuthIdentifier()
     {
         return $this->id;
     }
-    
+
     public function getAuthPassword(): string
     {
         return $this->password;
     }
-    
+
     public function getAuthPasswordName(): string
     {
         return 'password';
     }
-    
+
     public function getRememberToken(): ?string
     {
         return $this->remember_token;
     }
-    
+
     public function setRememberToken(?string $value): void
     {
         $this->remember_token = $value;
     }
-    
+
     public function getRememberTokenName(): string
     {
         return 'remember_token';
