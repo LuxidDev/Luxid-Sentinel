@@ -10,9 +10,9 @@ use Luxid\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
 /**
  * Sentinel static facade.
- * 
+ *
  * @package Luxid\Sentinel
- * 
+ *
  * @method static bool attempt(array $credentials, bool $remember = false)
  * @method static bool login(AuthenticatableContract $user, bool $remember = false)
  * @method static void logout()
