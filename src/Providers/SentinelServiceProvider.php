@@ -21,9 +21,10 @@ class SentinelServiceProvider
 
   public function boot(Application $app): void
   {
-    if (isset($GLOBALS['sentinel_auth_manager'])) {
-      Sentinel::setManager($GLOBALS['sentinel_auth_manager']);
-    }
+    $authManager = Sentinel::getManager();
+
+    // Register the auth manager with the application
+    $app->registerAuth($authManager);
   }
 
   protected function registerConfig(Application $app): void

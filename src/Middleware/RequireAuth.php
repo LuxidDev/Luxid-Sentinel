@@ -19,47 +19,60 @@ use Luxid\Exceptions\ForbiddenException;
  */
 class RequireAuth extends BaseMiddleware
 {
-    /**
-     * Create a new RequireAuth middleware.
-     *
-     * @param AuthManager $auth Authentication manager
-     * @param Response $response Response instance
-     */
-    public function __construct(
-        protected AuthManager $auth,
-        protected Response $response
-    ) {}
+  /**
+   * Create a new RequireAuth middleware.
+   *
+   * @param AuthManager $auth Authentication manager
+   * @param Response $response Response instance
+   */
+  public function __construct(
+    protected AuthManager $auth,
+    protected Response $response
+  ) {}
 
-    /**
-     * Execute the middleware.
-     *
-     * @return void
-     *
-     * @throws ForbiddenException If user is not authenticated
-     */
-    public function execute(): void
-    {
-        if ($this->auth->check()) {
-            return;
-        }
+  /**
+   * Execute the middleware.
+   *
+   * @return void
+   *
+   * @throws ForbiddenException If user is not authenticated
+   */
+  public function execute(): void
+  {
+    // Debug: Check if we have a session
+    error_log("=== RequireAuth Middleware ===");
+    error_log("Session ID: " . session_id());
+    error_log("Session data: " . json_encode($_SESSION));
 
-        // Check if this is an API request
-        $path = $_SERVER['REQUEST_URI'] ?? '/';
-        $acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? '';
-        $isApiRequest = strpos($path, '/api/') === 0 ||
-                       strpos($acceptHeader, 'application/json') !== false;
+    // Check if the auth manager has a user
+    error_log("Auth check: " . ($this->auth->check() ? 'true' : 'false'));
 
-        if ($isApiRequest) {
-            // Return JSON response for API requests
-            $this->response->json([
-                'success' => false,
-                'message' => 'Unauthenticated. Please log in.',
-                'error' => 'Authentication required'
-            ], 401);
-            exit;
-        }
+    $user = $this->auth->user();
+    error_log("User: " . ($user ? json_encode(['id' => $user->id, 'email' => $user->email]) : 'null'));
 
-        // Throw exception for web requests (handled by framework)
-        throw new ForbiddenException('You must be logged in to access this page.');
+    if ($this->auth->check()) {
+      error_log("User is authenticated, proceeding...");
+      return;
     }
+
+    error_log("User not authenticated, checking request type...");
+
+    $path = $_SERVER['REQUEST_URI'] ?? '/';
+    $acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? '';
+    $isApiRequest = strpos($path, '/api/') === 0 ||
+      strpos($acceptHeader, 'application/json') !== false;
+
+    error_log("Is API request: " . ($isApiRequest ? 'true' : 'false'));
+
+    if ($isApiRequest) {
+      $this->response->json([
+        'success' => false,
+        'message' => 'Unauthenticated. Please log in.',
+        'error' => 'Authentication required'
+      ], 401);
+      exit;
+    }
+
+    throw new ForbiddenException('You must be logged in to access this page.');
+  }
 }

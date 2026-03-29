@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Luxid\Sentinel;
 
 use Luxid\Sentinel\Contracts\Authenticatable;
+use Luxid\Contracts\Auth\AuthManager as AuthManagerContract;
 
 /**
  * Sentinel static facade.
@@ -20,7 +21,7 @@ use Luxid\Sentinel\Contracts\Authenticatable;
  * @method static bool guest()
  * @method static bool validate(array $credentials)
  */
-class Sentinel
+class Sentinel implements AuthManagerContract
 {
   protected static ?AuthManager $manager = null;
 

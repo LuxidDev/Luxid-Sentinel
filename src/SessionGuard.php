@@ -19,305 +19,317 @@ use RuntimeException;
  */
 class SessionGuard implements Guard
 {
-    /**
-     * Session key for storing authenticated user ID.
-     */
-    protected const SESSION_USER_KEY = 'sentinel_user_id';
+  /**
+   * Session key for storing authenticated user ID.
+   */
+  protected const SESSION_USER_KEY = 'sentinel_user_id';
 
-    /**
-     * Session key for storing "remember me" token.
-     */
-    protected const SESSION_REMEMBER_KEY = 'sentinel_remember_token';
+  /**
+   * Session key for storing "remember me" token.
+   */
+  protected const SESSION_REMEMBER_KEY = 'sentinel_remember_token';
 
-    /**
-     * The currently authenticated user.
-     */
-    protected ?Authenticatable $user = null;
+  /**
+   * The currently authenticated user.
+   */
+  protected ?Authenticatable $user = null;
 
-    /**
-     * Whether the user was retrieved from the session on this request.
-     */
-    protected bool $loggedOut = false;
+  /**
+   * Whether the user was retrieved from the session on this request.
+   */
+  protected bool $loggedOut = false;
 
-    /**
-     * Create a new session guard instance.
-     *
-     * @param SessionInterface $session Luxid session instance
-     * @param PasswordHasher $hasher Password hasher instance
-     * @param string $provider Entity provider class name
-     */
-    public function __construct(
-        protected SessionInterface $session,
-        protected PasswordHasher $hasher,
-        protected string $provider
-    ) {}
+  /**
+   * Create a new session guard instance.
+   *
+   * @param SessionInterface $session Luxid session instance
+   * @param PasswordHasher $hasher Password hasher instance
+   * @param string $provider Entity provider class name
+   */
+  public function __construct(
+    protected SessionInterface $session,
+    protected PasswordHasher $hasher,
+    protected string $provider
+  ) {}
 
-    /**
-     * {@inheritdoc}
-     */
-    public function check(): bool
-    {
-        return $this->user() !== null;
+  /**
+   * {@inheritdoc}
+   */
+  public function check(): bool
+  {
+    return $this->user() !== null;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function guest(): bool
+  {
+    return !$this->check();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function user(): ?Authenticatable
+  {
+    if ($this->loggedOut) {
+      return null;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function guest(): bool
-    {
-        return !$this->check();
+    // Return cached user if available
+    if ($this->user !== null) {
+      return $this->user;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function user(): ?Authenticatable
-    {
-        if ($this->loggedOut) {
-            return null;
-        }
+    $userId = $this->session->get(self::SESSION_USER_KEY);
 
-        // Return cached user if available
-        if ($this->user !== null) {
-            return $this->user;
-        }
-
-        $userId = $this->session->get(self::SESSION_USER_KEY);
-
-        if ($userId === null) {
-            return null;
-        }
-
-        // Retrieve user from database using the provider
-        $user = $this->retrieveUserById($userId);
-
-        if ($user === null) {
-            // User not found in database - clear session
-            $this->logout();
-            return null;
-        }
-
-        $this->user = $user;
-
-        return $this->user;
+    if ($userId === null) {
+      return null;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function id()
-    {
-        $user = $this->user();
+    // Retrieve user from database using the provider
+    $user = $this->retrieveUserById($userId);
 
-        return $user ? $user->getAuthIdentifier() : null;
+    if ($user === null) {
+      // User not found in database - clear session
+      $this->logout();
+      return null;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function validate(array $credentials = []): bool
-    {
-        $user = $this->retrieveUserByCredentials($credentials);
+    $this->user = $user;
 
-        if ($user === null) {
-            return false;
-        }
+    return $this->user;
+  }
 
-        return $this->hasValidCredentials($user, $credentials);
+  /**
+   * {@inheritdoc}
+   */
+  public function id()
+  {
+    $user = $this->user();
+
+    return $user ? $user->getAuthIdentifier() : null;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validate(array $credentials = []): bool
+  {
+    $user = $this->retrieveUserByCredentials($credentials);
+
+    if ($user === null) {
+      return false;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function attempt(array $credentials = [], bool $remember = false): bool
-    {
-        $user = $this->retrieveUserByCredentials($credentials);
+    return $this->hasValidCredentials($user, $credentials);
+  }
 
-        if ($user === null) {
-            return false;
-        }
+  /**
+   * {@inheritdoc}
+   */
+  public function attempt(array $credentials = [], bool $remember = false): bool
+  {
+    $user = $this->retrieveUserByCredentials($credentials);
 
-        if (!$this->hasValidCredentials($user, $credentials)) {
-            return false;
-        }
-
-        $this->login($user, $remember);
-
-        return true;
+    if ($user === null) {
+      return false;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function login(Authenticatable $user, bool $remember = false): bool
-    {
-        $this->updateSession($user->getAuthIdentifier());
-
-        if ($remember) {
-            $this->setRememberToken($user);
-        }
-
-        $this->user = $user;
-        $this->loggedOut = false;
-
-        return true;
+    if (!$this->hasValidCredentials($user, $credentials)) {
+      return false;
     }
 
-    /**
-     * Log the user in using their ID.
-     *
-     * @param mixed $id User ID
-     * @param bool $remember
-     * @return Authenticatable|false
-     */
-    public function loginUsingId($id, bool $remember = false)
-    {
-        $user = $this->retrieveUserById($id);
+    $this->login($user, $remember);
 
-        if ($user === null) {
-            return false;
-        }
+    return true;
+  }
 
-        $this->login($user, $remember);
+  /**
+   * {@inheritdoc}
+   */
+  public function login(Authenticatable $user, bool $remember = false): bool
+  {
+    error_log("=== SessionGuard::login ===");
+    error_log("User ID: " . $user->getAuthIdentifier());
+    error_log("Session status before: " . session_status());
 
-        return $user;
+    if (session_start() === PHP_SESSION_NONE) {
+      session_start();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function logout(): void
-    {
-        $user = $this->user();
+    $this->updateSession($user->getAuthIdentifier());
 
-        if ($user !== null) {
-            $this->clearRememberToken($user);
-        }
+    error_log("Session after update: " . json_encode($_SESSION));
 
-        $this->session->remove(self::SESSION_USER_KEY);
-        $this->session->remove(self::SESSION_REMEMBER_KEY);
-
-        $this->user = null;
-        $this->loggedOut = true;
+    if ($remember) {
+      $this->setRememberToken($user);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getProvider()
-    {
-        return $this->provider;
+    $this->user = $user;
+    $this->loggedOut = false;
+
+    error_log("Login successful, session data: " . json_encode($_SESSION));
+
+    return true;
+  }
+
+  /**
+   * Log the user in using their ID.
+   *
+   * @param mixed $id User ID
+   * @param bool $remember
+   * @return Authenticatable|false
+   */
+  public function loginUsingId($id, bool $remember = false)
+  {
+    $user = $this->retrieveUserById($id);
+
+    if ($user === null) {
+      return false;
     }
 
-    /**
-     * Update the session with the user ID.
-     *
-     * @param mixed $id
-     * @return void
-     */
-    protected function updateSession($id): void
-    {
-        $this->session->set(self::SESSION_USER_KEY, $id);
+    $this->login($user, $remember);
+
+    return $user;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function logout(): void
+  {
+    $user = $this->user();
+
+    if ($user !== null) {
+      $this->clearRememberToken($user);
     }
 
-    /**
-     * Set the "remember me" token for the user.
-     *
-     * @param Authenticatable $user
-     * @return void
-     */
-    protected function setRememberToken(Authenticatable $user): void
-    {
-        $token = bin2hex(random_bytes(32));
+    $this->session->remove(self::SESSION_USER_KEY);
+    $this->session->remove(self::SESSION_REMEMBER_KEY);
 
-        $user->setRememberToken($token);
+    $this->user = null;
+    $this->loggedOut = true;
+  }
 
-        // Save token to database
-        if (method_exists($user, 'save')) {
-            $user->save();
-        }
+  /**
+   * {@inheritdoc}
+   */
+  public function getProvider()
+  {
+    return $this->provider;
+  }
 
-        $this->session->set(self::SESSION_REMEMBER_KEY, $token);
+  /**
+   * Update the session with the user ID.
+   *
+   * @param mixed $id
+   * @return void
+   */
+  protected function updateSession($id): void
+  {
+    $this->session->set(self::SESSION_USER_KEY, $id);
+  }
+
+  /**
+   * Set the "remember me" token for the user.
+   *
+   * @param Authenticatable $user
+   * @return void
+   */
+  protected function setRememberToken(Authenticatable $user): void
+  {
+    $token = bin2hex(random_bytes(32));
+
+    $user->setRememberToken($token);
+
+    // Save token to database
+    if (method_exists($user, 'save')) {
+      $user->save();
     }
 
-    /**
-     * Clear the "remember me" token for the user.
-     *
-     * @param Authenticatable $user
-     * @return void
-     */
-    protected function clearRememberToken(Authenticatable $user): void
-    {
-        $user->setRememberToken(null);
+    $this->session->set(self::SESSION_REMEMBER_KEY, $token);
+  }
 
-        if (method_exists($user, 'save')) {
-            $user->save();
-        }
+  /**
+   * Clear the "remember me" token for the user.
+   *
+   * @param Authenticatable $user
+   * @return void
+   */
+  protected function clearRememberToken(Authenticatable $user): void
+  {
+    $user->setRememberToken(null);
+
+    if (method_exists($user, 'save')) {
+      $user->save();
+    }
+  }
+
+  /**
+   * Retrieve a user by their ID.
+   *
+   * @param mixed $id
+   * @return Authenticatable|null
+   */
+  protected function retrieveUserById($id): ?Authenticatable
+  {
+    $provider = $this->provider;
+
+    if (!method_exists($provider, 'find')) {
+      throw new RuntimeException(
+        sprintf('Provider "%s" must implement a find() method', $provider)
+      );
     }
 
-    /**
-     * Retrieve a user by their ID.
-     *
-     * @param mixed $id
-     * @return Authenticatable|null
-     */
-    protected function retrieveUserById($id): ?Authenticatable
-    {
-        $provider = $this->provider;
+    return $provider::find($id);
+  }
 
-        if (!method_exists($provider, 'find')) {
-            throw new RuntimeException(
-                sprintf('Provider "%s" must implement a find() method', $provider)
-            );
-        }
+  /**
+   * Retrieve a user by the given credentials.
+   *
+   * @param array $credentials
+   * @return Authenticatable|null
+   */
+  protected function retrieveUserByCredentials(array $credentials): ?Authenticatable
+  {
+    $provider = $this->provider;
 
-        return $provider::find($id);
+    // Remove password from credentials for lookup
+    $query = array_diff_key($credentials, array_flip(['password']));
+
+    if (empty($query)) {
+      return null;
     }
 
-    /**
-     * Retrieve a user by the given credentials.
-     *
-     * @param array $credentials
-     * @return Authenticatable|null
-     */
-    protected function retrieveUserByCredentials(array $credentials): ?Authenticatable
-    {
-        $provider = $this->provider;
-
-        // Remove password from credentials for lookup
-        $query = array_diff_key($credentials, array_flip(['password']));
-
-        if (empty($query)) {
-            return null;
-        }
-
-        if (!method_exists($provider, 'findOne')) {
-            throw new RuntimeException(
-                sprintf('Provider "%s" must implement a findOne() method', $provider)
-            );
-        }
-
-        return $provider::findOne($query);
+    if (!method_exists($provider, 'findOne')) {
+      throw new RuntimeException(
+        sprintf('Provider "%s" must implement a findOne() method', $provider)
+      );
     }
 
-    /**
-     * Check if the user has valid credentials.
-     *
-     * @param Authenticatable $user
-     * @param array $credentials
-     * @return bool
-     */
-    protected function hasValidCredentials(Authenticatable $user, array $credentials): bool
-    {
-        $passwordName = $user->getAuthPasswordName();
+    return $provider::findOne($query);
+  }
 
-        if (!isset($credentials[$passwordName])) {
-            return false;
-        }
+  /**
+   * Check if the user has valid credentials.
+   *
+   * @param Authenticatable $user
+   * @param array $credentials
+   * @return bool
+   */
+  protected function hasValidCredentials(Authenticatable $user, array $credentials): bool
+  {
+    $passwordName = $user->getAuthPasswordName();
 
-        return $this->hasher->check(
-            $credentials[$passwordName],
-            $user->getAuthPassword()
-        );
+    if (!isset($credentials[$passwordName])) {
+      return false;
     }
+
+    return $this->hasher->check(
+      $credentials[$passwordName],
+      $user->getAuthPassword()
+    );
+  }
 }
