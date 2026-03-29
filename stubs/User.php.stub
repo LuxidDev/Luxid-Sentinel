@@ -9,7 +9,7 @@ use Rocket\Attributes\Rules\Required;
 use Rocket\Attributes\Rules\Email;
 use Rocket\Attributes\Rules\Min;
 use Rocket\Attributes\Rules\Unique;
-use Luxid\Sentinel\Contracts\Authenticatable;
+use Luxid\Contracts\Auth\Authenticatable;
 
 /**
  * User Entity
