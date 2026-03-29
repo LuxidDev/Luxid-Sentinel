@@ -1,0 +1,129 @@
+<?php
+
+namespace App\Actions;
+
+use App\Actions\LuxidAction;
+use App\Entities\User;
+use Luxid\Nodes\Request;
+use Luxid\Nodes\Response;
+use Luxid\Sentinel\Sentinel;
+
+/**
+ * Auth Action
+ *
+ * Handles all authentication operations:
+ * - Register new users
+ * - Login existing users
+ * - Logout current user
+ * - Get current user info
+ */
+class AuthAction extends LuxidAction
+{
+    /**
+     * Register a new user
+     * POST /auth/register
+     */
+    public function register(): string
+    {
+        $data = $this->request()->input();
+        
+        // Validate required fields
+        $required = ['email', 'password', 'firstname', 'lastname'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                return Response::error("The {$field} field is required.", null, 422);
+            }
+        }
+        
+        // Create new user
+        $user = new User();
+        $user->email = $data['email'];
+        $user->password = $data['password'];
+        $user->firstname = $data['firstname'];
+        $user->lastname = $data['lastname'];
+        
+        // Validate and save
+        if (!$user->validate()) {
+            return Response::error('Validation failed', $user->getErrors(), 422);
+        }
+        
+        if (!$user->save()) {
+            return Response::error('Failed to create user', null, 500);
+        }
+        
+        // Log the user in automatically
+        Sentinel::login($user);
+        
+        return Response::success([
+            'user' => $user->toArray(),
+            'message' => 'Registration successful!'
+        ], 201);
+    }
+    
+    /**
+     * Login a user
+     * POST /auth/login
+     */
+    public function login(): string
+    {
+        $data = $this->request()->input();
+        
+        // Validate required fields
+        if (empty($data['email'])) {
+            return Response::error('Email is required.', null, 422);
+        }
+        
+        if (empty($data['password'])) {
+            return Response::error('Password is required.', null, 422);
+        }
+        
+        // Attempt login
+        $credentials = [
+            'email' => $data['email'],
+            'password' => $data['password'],
+        ];
+        
+        $remember = !empty($data['remember']);
+        
+        if (Sentinel::attempt($credentials, $remember)) {
+            $user = Sentinel::user();
+            
+            return Response::success([
+                'user' => $user->toArray(),
+                'message' => 'Login successful!'
+            ]);
+        }
+        
+        return Response::error('Invalid credentials.', null, 401);
+    }
+    
+    /**
+     * Logout current user
+     * POST /auth/logout
+     */
+    public function logout(): string
+    {
+        Sentinel::logout();
+        
+        return Response::success([
+            'message' => 'Logged out successfully!'
+        ]);
+    }
+    
+    /**
+     * Get current authenticated user
+     * GET /auth/me
+     */
+    public function me(): string
+    {
+        $user = Sentinel::user();
+        
+        if (!$user) {
+            return Response::error('Not authenticated', null, 401);
+        }
+        
+        return Response::success([
+            'user' => $user->toArray()
+        ]);
+    }
+}

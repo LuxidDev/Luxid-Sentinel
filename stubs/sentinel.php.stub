@@ -1,0 +1,45 @@
+<?php
+
+return [
+    /*
+    | Default Authentication Guard
+    */
+    'default' => 'session',
+    
+    /*
+    | Authentication Guards
+    */
+    'guards' => [
+        'session' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+    ],
+    
+    /*
+    | User Providers
+    */
+    'providers' => [
+        'users' => [
+            'entity' => {{userClass}}::class,
+        ],
+    ],
+    
+    /*
+    | Password Hashing
+    */
+    'hashing' => [
+        'driver' => 'bcrypt',
+        'bcrypt' => [
+            'rounds' => $_ENV['BCRYPT_ROUNDS'] ?? 12,
+        ],
+    ],
+    
+    /*
+    | Remember Me
+    */
+    'remember' => [
+        'enabled' => true,
+        'lifetime' => 43200, // 30 days in minutes
+    ],
+];

@@ -1,45 +1,53 @@
 {
-    "name": "luxid/sentinel",
-    "description": "Session-based authentication package for Luxid PHP Framework",
-    "type": "library",
-    "license": "MIT",
-    "keywords": ["luxid", "authentication", "auth", "session", "guard", "sentinel"],
-    "authors": [
-        {
-            "name": "Jhay",
-            "email": "jhay@luxid.dev"
-        }
+  "name": "luxid/sentinel",
+  "description": "Session-based authentication package for Luxid PHP Framework",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "luxid",
+    "authentication",
+    "auth",
+    "session",
+    "guard",
+    "sentinel"
+  ],
+  "authors": [
+    {
+      "name": "Jhay",
+      "email": "jhay@luxid.dev"
+    }
+  ],
+  "require": {
+    "php": "^8.0",
+    "luxid/engine": "^0.6.5",
+    "luxid/rocket": "^0.1.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "Luxid\\Sentinel\\": "src/"
+    },
+    "files": [
+      "src/Support/helpers.php"
+    ]
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "@php bin/generate-bridge.php"
     ],
-    "require": {
-        "php": "^8.0",
-        "luxid/engine": "^0.4.2"
-    },
-    "autoload": {
-        "psr-4": {
-            "Luxid\\Sentinel\\": "src/"
-        },
-        "files": [
-            "src/Support/helpers.php"
-        ]
-    },
-    "scripts": {
-        "post-install-cmd": [
-            "@php bin/generate-bridge.php"
-        ],
-        "post-update-cmd": [
-            "@php bin/generate-bridge.php"
-        ]
-    },
-    "extra": {
-        "luxid": {
-            "providers": [
-                "Luxid\\Sentinel\\Providers\\SentinelServiceProvider"
-            ],
-            "commands": {
-                "sentinel:install": "Luxid\\Sentinel\\Console\\InstallCommand"
-            }
-        }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    "post-update-cmd": [
+      "@php bin/generate-bridge.php"
+    ]
+  },
+  "extra": {
+    "luxid": {
+      "providers": [
+        "Luxid\\Sentinel\\Providers\\SentinelServiceProvider"
+      ],
+      "commands": {
+        "sentinel:install": "Luxid\\Sentinel\\Console\\InstallCommand"
+      }
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
