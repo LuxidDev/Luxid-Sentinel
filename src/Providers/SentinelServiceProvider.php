@@ -7,7 +7,6 @@ use Luxid\Sentinel\AuthManager;
 use Luxid\Sentinel\PasswordHasher;
 use Luxid\Sentinel\Sentinel;
 use Luxid\Sentinel\Middleware\RequireAuth;
-use Rocket\Connection\Connection;
 
 class SentinelServiceProvider
 {
@@ -17,6 +16,11 @@ class SentinelServiceProvider
     $this->registerPasswordHasher($app);
     $this->registerAuthManager($app);
     $this->registerMiddleware($app);
+
+    // Set Sentinel's manager during register phase
+    if (isset($GLOBALS['sentinel_auth_manager'])) {
+      Sentinel::setManager($GLOBALS['sentinel_auth_manager']);
+    }
   }
 
   public function boot(Application $app): void
@@ -25,6 +29,15 @@ class SentinelServiceProvider
 
     // Register the auth manager with the application
     $app->registerAuth($authManager);
+
+    // Register the auth middleware with the router
+    $middleware = new RequireAuth($authManager, $app->response);
+    $app->router->addGlobalMiddleware($middleware);
+
+    // Also register it as a named middleware for routes
+    if (method_exists($app->router, 'addNamedMiddleware')) {
+      $app->router->addNamedMiddleware('auth', $middleware);
+    }
   }
 
   protected function registerConfig(Application $app): void
