@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "00c27d636fa8de922dfa9c07de12076e",
+    "content-hash": "897d8e1c4256a39b50d6c4320abc1b8f",
     "packages": [
         {
             "name": "fakerphp/faker",
@@ -133,16 +133,16 @@
         },
         {
             "name": "luxid/engine",
-            "version": "v0.6.5",
+            "version": "v0.6.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/LuxidDev/Luxid-Engine.git",
-                "reference": "bd8ece5d0fe2772ab9cd491030bf1184423013d6"
+                "reference": "8325cf191241bdec7712a07da0c7ae8d27046a25"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/LuxidDev/Luxid-Engine/zipball/bd8ece5d0fe2772ab9cd491030bf1184423013d6",
-                "reference": "bd8ece5d0fe2772ab9cd491030bf1184423013d6",
+                "url": "https://api.github.com/repos/LuxidDev/Luxid-Engine/zipball/8325cf191241bdec7712a07da0c7ae8d27046a25",
+                "reference": "8325cf191241bdec7712a07da0c7ae8d27046a25",
                 "shasum": ""
             },
             "require": {
@@ -182,9 +182,9 @@
             ],
             "support": {
                 "issues": "https://github.com/LuxidDev/Luxid-Engine/issues",
-                "source": "https://github.com/LuxidDev/Luxid-Engine/tree/v0.6.5"
+                "source": "https://github.com/LuxidDev/Luxid-Engine/tree/v0.6.6"
             },
-            "time": "2026-03-28T14:46:46+00:00"
+            "time": "2026-03-29T04:48:13+00:00"
         },
         {
             "name": "luxid/rocket",

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Luxid\Sentinel;
 
 use Luxid\Http\SessionInterface;
-use Luxid\Sentinel\Contracts\Guard;
 use Luxid\Sentinel\Contracts\Authenticatable;
 use RuntimeException;
+use Luxid\Contracts\Auth\Guard as GuardContract;
 
 /**
  * Session-based authentication guard.
@@ -17,7 +17,7 @@ use RuntimeException;
  *
  * @package Luxid\Sentinel
  */
-class SessionGuard implements Guard
+class SessionGuard implements GuardContract
 {
   /**
    * Session key for storing authenticated user ID.

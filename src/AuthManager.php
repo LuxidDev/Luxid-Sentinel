@@ -8,6 +8,9 @@ use Luxid\Foundation\Application;
 use Luxid\Sentinel\Contracts\Guard;
 use Luxid\Sentinel\Contracts\Authenticatable;
 use RuntimeException;
+use Luxid\Contracts\Auth\AuthManager as AuthManagerContract;
+use Luxid\Contracts\Auth\Guard as GuardContract;
+use Luxid\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
 /**
  * Authentication manager.
@@ -17,7 +20,7 @@ use RuntimeException;
  *
  * @method \App\Entities\User|null user()
  */
-class AuthManager
+class AuthManager implements AuthManagerContract
 {
   /**
    * The default guard name.

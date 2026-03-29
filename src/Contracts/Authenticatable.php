@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Luxid\Sentinel\Contracts;
 
+use Luxid\Contracts\Auth\Authenticatable as AuthenticatableContract;
+
 /**
  * Contract for authenticatable entities (typically User).
  *
@@ -12,7 +14,7 @@ namespace Luxid\Sentinel\Contracts;
  *
  * @package Luxid\Sentinel\Contracts
  */
-interface Authenticatable
+interface Authenticatable extends AuthenticatableContract
 {
   /**
    * Get the name of the unique identifier for the user.
