@@ -90,17 +90,4 @@ class User extends UserEntity implements Authenticatable
     {
         return 'remember_token';
     }
-    
-    public function toArray(): array
-    {
-        return [
-            'id' => $this->id,
-            'email' => $this->email,
-            'firstname' => $this->firstname,
-            'lastname' => $this->lastname,
-            'display_name' => $this->getDisplayName(),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-        ];
-    }
 }

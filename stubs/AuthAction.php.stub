@@ -55,7 +55,7 @@ class AuthAction extends LuxidAction
         Sentinel::login($user);
         
         return Response::success([
-            'user' => $user->toArray(),
+            'user' => $user,
             'message' => 'Registration successful!'
         ], 201);
     }
@@ -89,7 +89,7 @@ class AuthAction extends LuxidAction
             $user = Sentinel::user();
             
             return Response::success([
-                'user' => $user->toArray(),
+                'user' => $user,
                 'message' => 'Login successful!'
             ]);
         }
@@ -123,7 +123,7 @@ class AuthAction extends LuxidAction
         }
         
         return Response::success([
-            'user' => $user->toArray()
+            'user' => $user
         ]);
     }
 }
