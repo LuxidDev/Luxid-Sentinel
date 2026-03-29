@@ -22,53 +22,53 @@ use Luxid\Sentinel\Contracts\Authenticatable;
  */
 class Sentinel
 {
-    protected static ?AuthManager $manager = null;
+  protected static ?AuthManager $manager = null;
 
-    /**
-     * Set the AuthManager instance.
-     *
-     * @param AuthManager $manager
-     * @return void
-     */
-    public static function setManager(AuthManager $manager): void
-    {
-        self::$manager = $manager;
+  /**
+   * Set the AuthManager instance.
+   *
+   * @param AuthManager $manager
+   * @return void
+   */
+  public static function setManager(AuthManager $manager): void
+  {
+    self::$manager = $manager;
+  }
+
+  /**
+   * Get the AuthManager instance.
+   *
+   * @return AuthManager
+   * @throws \RuntimeException
+   */
+  public static function getManager(): AuthManager
+  {
+    if (self::$manager === null) {
+      throw new \RuntimeException('Sentinel not initialized.');
     }
 
-    /**
-     * Get the AuthManager instance.
-     *
-     * @return AuthManager
-     * @throws \RuntimeException
-     */
-    public static function getManager(): AuthManager
-    {
-        if (self::$manager === null) {
-            throw new \RuntimeException('Sentinel not initialized.');
-        }
+    return self::$manager;
+  }
 
-        return self::$manager;
-    }
+  /**
+   * Check if Sentinel is initialized.
+   *
+   * @return bool
+   */
+  public static function isInitialized(): bool
+  {
+    return self::$manager !== null;
+  }
 
-    /**
-     * Check if Sentinel is initialized.
-     *
-     * @return bool
-     */
-    public static function isInitialized(): bool
-    {
-        return self::$manager !== null;
-    }
-
-    /**
-     * Handle dynamic static method calls.
-     *
-     * @param string $method
-     * @param array $arguments
-     * @return mixed
-     */
-    public static function __callStatic(string $method, array $arguments)
-    {
-        return self::getManager()->$method(...$arguments);
-    }
+  /**
+   * Handle dynamic static method calls.
+   *
+   * @param string $method
+   * @param array $arguments
+   * @return mixed
+   */
+  public static function __callStatic(string $method, array $arguments)
+  {
+    return self::getManager()->$method(...$arguments);
+  }
 }

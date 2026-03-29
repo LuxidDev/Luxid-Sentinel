@@ -107,16 +107,21 @@ class InstallCommand extends Command
     $migrationsPath = $this->projectRoot . '/migrations';
     $this->ensureDirectory($migrationsPath);
 
+    // Find existing users table migration
+    $existingFiles = glob($migrationsPath . '/m*_create_users_table.php');
+
+    // Remove existing users table migration if found
+    foreach ($existingFiles as $existingFile) {
+      if (unlink($existingFile)) {
+        $this->info("✓ Removed existing migration: " . basename($existingFile));
+      }
+    }
+
     $nextNumber = $this->getNextMigrationNumber();
     $filename = sprintf('m%05d_create_users_table.php', $nextNumber);
     $target = $migrationsPath . '/' . $filename;
 
     $source = $this->stubsPath . '/create_users_table.php.stub';
-
-    if (file_exists($target) && !$this->shouldForce()) {
-      $this->warning('Migration already exists. Skipping...');
-      return;
-    }
 
     $className = sprintf('m%05d_create_users_table', $nextNumber);
     $content = str_replace('{{class}}', $className, file_get_contents($source));
@@ -161,9 +166,9 @@ class InstallCommand extends Command
     $target = $targetDir . '/User.php';
     $source = $this->stubsPath . '/User.php.stub';
 
-    if (file_exists($target) && !$this->shouldForce()) {
-      $this->warning('User entity already exists. Use --force to replace it.');
-      return;
+    // Always replace the entity (with or without force)
+    if (file_exists($target)) {
+      $this->info("✓ Replacing existing User entity...");
     }
 
     if (file_put_contents($target, file_get_contents($source))) {
