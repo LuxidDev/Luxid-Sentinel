@@ -80,6 +80,12 @@ class AuthManager implements AuthManagerContract
     return $this;
   }
 
+  public function getProvider(?string $name = null): ?array
+  {
+    $name = $name ?? 'users';
+    return $this->config['providers'][$name] ?? null;
+  }
+
   protected function createGuard(string $name): GuardContract
   {
     $config = $this->config['guards'][$name] ?? null;
@@ -107,12 +113,6 @@ class AuthManager implements AuthManagerContract
       ),
       default => throw new RuntimeException("Unsupported auth driver [{$config['driver']}]."),
     };
-  }
-
-  public function getProvider(?string $name = null): ?array
-  {
-    $name = $name ?? 'users';
-    return $this->config['providers'][$name] ?? null;
   }
 
   public function __call(string $method, array $parameters)
