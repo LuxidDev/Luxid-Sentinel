@@ -95,17 +95,11 @@ class SessionGuard implements GuardContract
 
   public function login(AuthenticatableContract $user, bool $remember = false): bool
   {
-    error_log("=== SessionGuard::login ===");
-    error_log("User ID: " . $user->getAuthIdentifier());
-    error_log("Session status before: " . session_status());
-
     if (session_status() === PHP_SESSION_NONE) {
       session_start();
     }
 
     $this->updateSession($user->getAuthIdentifier());
-
-    error_log("Session after update: " . json_encode($_SESSION));
 
     if ($remember) {
       $this->setRememberToken($user);
@@ -113,8 +107,6 @@ class SessionGuard implements GuardContract
 
     $this->user = $user;
     $this->loggedOut = false;
-
-    error_log("Login successful, session data: " . json_encode($_SESSION));
 
     return true;
   }
