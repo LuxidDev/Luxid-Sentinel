@@ -19,7 +19,7 @@
   ],
   "require": {
     "php": "^8.0",
-    "luxid/engine": "^0.6.7",
+    "luxid/engine": "^0.7.1",
     "luxid/rocket": "^0.1.8"
   },
   "autoload": {
