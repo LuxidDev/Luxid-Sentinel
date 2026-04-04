@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Luxid\Sentinel\Contracts;
+namespace Luxid\Haven\Contracts;
 
 /**
  * Contract for authentication guards.
  *
  * Guards define how users are authenticated and retrieved for each request.
- * Sentinel provides SessionGuard by default, but this contract allows
+ * Haven provides SessionGuard by default, but this contract allows
  * for future expansion (API tokens, OAuth, etc.).
  *
- * @package Luxid\Sentinel\Contracts
+ * @package Luxid\Haven\Contracts
  */
 interface Guard
 {

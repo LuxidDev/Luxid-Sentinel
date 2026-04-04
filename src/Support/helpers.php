@@ -1,6 +1,6 @@
 <?php
 
-use Luxid\Sentinel\Sentinel;
+use Luxid\Haven\Haven;
 use Luxid\Foundation\Application;
 
 if (!function_exists('auth')) {
@@ -8,7 +8,7 @@ if (!function_exists('auth')) {
    * Get the available auth instance.
    *
    * @param string|null $guard
-   * @return \Luxid\Sentinel\AuthManager|\Luxid\Sentinel\Contracts\Guard
+   * @return \Luxid\Haven\AuthManager|\Luxid\Haven\Contracts\Guard
    *
    * @throws RuntimeException If auth service is not available
    *
@@ -36,12 +36,12 @@ if (!function_exists('auth')) {
     }
 
     if ($manager === null) {
-      // Try to get auth manager from Sentinel static registry
+      // Try to get auth manager from Haven static registry
       try {
-        $manager = Sentinel::getManager();
+        $manager = Haven::getManager();
       } catch (\RuntimeException $e) {
         throw new RuntimeException(
-          'Auth service not available. Make sure SentinelServiceProvider::boot() was called.',
+          'Auth service not available. Make sure HavenServiceProvider::boot() was called.',
           0,
           $e
         );

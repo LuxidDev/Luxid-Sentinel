@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luxid\Sentinel\Contracts;
+namespace Luxid\Haven\Contracts;
 
 use Luxid\Contracts\Auth\Authenticatable as AuthAuthenticatable;
 
@@ -12,7 +12,7 @@ use Luxid\Contracts\Auth\Authenticatable as AuthAuthenticatable;
  * An entity that can be authenticated must implement this interface.
  * In Luxid, this is typically your User entity that extends DbEntity.
  *
- * @package Luxid\Sentinel\Contracts
+ * @package Luxid\Haven\Contracts
  */
 interface Authenticatable extends AuthAuthenticatable
 {

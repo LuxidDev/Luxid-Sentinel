@@ -1,8 +1,8 @@
-# Luxid Sentinel Documentation
+# Luxid Haven Documentation
 
 ## Overview
 
-**Luxid Sentinel** is a modern, session-based authentication package for the Luxid Framework. It provides a complete authentication system with user registration, login, logout, and session management, seamlessly integrated with Luxid's architecture and Rocket ORM.
+**Luxid Haven** is a modern, session-based authentication package for the Luxid Framework. It provides a complete authentication system with user registration, login, logout, and session management, seamlessly integrated with Luxid's architecture and Rocket ORM.
 
 ## Table of Contents
 
@@ -23,9 +23,9 @@
 
 ## Introduction
 
-Luxid Sentinel is designed to be:
+Luxid Haven is designed to be:
 
-- **Simple** - One command installation with `php juice sentinel:install`
+- **Simple** - One command installation with `php juice haven:install`
 - **Secure** - Passwords hashed with bcrypt, session-based authentication
 - **Modern** - Uses PHP 8 attributes, Rocket ORM, and the latest Luxid features
 - **Extensible** - Custom guards, providers, and user entities
@@ -49,7 +49,7 @@ Luxid Sentinel is designed to be:
 
 ### Design Philosophy
 
-Sentinel follows a clean, layered architecture that separates concerns:
+Haven follows a clean, layered architecture that separates concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -65,8 +65,8 @@ Sentinel follows a clean, layered architecture that separates concerns:
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Sentinel Static Facade                     │
-│              (Sentinel::attempt(), Sentinel::user())         │
+│                    Haven Static Facade                       │
+│              (Haven::attempt(), Haven::user())               │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -192,18 +192,18 @@ DB_USER=your_username
 DB_PASSWORD=your_password
 ```
 
-3. **Install Sentinel**:
+3. **Install haven**:
 ```bash
-composer require luxid/sentinel
+composer require luxid/haven
 ```
 
 4. **Run the installation command**:
 ```bash
-php juice sentinel:install
+php juice haven:install
 ```
 
 This command will:
-- Publish the configuration file to `config/sentinel.php`
+- Publish the configuration file to `config/haven.php`
 - Create the users table migration with Rocket ORM
 - Generate the User entity with proper attributes
 - Create the AuthAction with all auth methods
@@ -231,7 +231,7 @@ my-app/
 │   └── Entities/
 │       └── User.php                # User entity with Authenticatable
 ├── config/
-│   └── sentinel.php                # Sentinel configuration
+│   └── haven.php                   # Haven configuration
 ├── migrations/
 │   └── m00001_create_users_table.php  # Users table migration
 └── routes/
@@ -342,8 +342,8 @@ The `SessionGuard` handles session-based authentication:
 class SessionGuard implements GuardContract
 {
     // Session keys
-    protected const SESSION_USER_KEY = 'sentinel_user_id';
-    protected const SESSION_REMEMBER_KEY = 'sentinel_remember_token';
+    protected const SESSION_USER_KEY = 'haven_user_id';
+    protected const SESSION_REMEMBER_KEY = 'haven_remember_token';
     
     // Authentication methods
     public function attempt(array $credentials = [], bool $remember = false): bool;
@@ -600,14 +600,14 @@ route('protected')
 
 ### Service Provider Integration
 
-Sentinel automatically registers its service provider through Composer's `extra` section:
+Haven automatically registers its service provider through Composer's `extra` section:
 
 ```json
 {
     "extra": {
         "luxid": {
             "providers": [
-                "Luxid\\Sentinel\\Providers\\SentinelServiceProvider"
+                "Luxid\\Haven\\Providers\\HavenServiceProvider"
             ]
         }
     }
@@ -621,7 +621,7 @@ The service provider:
 
 ### Route Builder Integration
 
-Sentinel's `auth()` middleware is available in routes:
+Haven's `auth()` middleware is available in routes:
 
 ```php
 // routes/api.php
@@ -649,7 +649,7 @@ class Application
 
 ### Request/Response Integration
 
-Sentinel uses Luxid's built-in `Request` and `Response` classes:
+Haven uses Luxid's built-in `Request` and `Response` classes:
 
 ```php
 // In AuthAction
@@ -661,7 +661,7 @@ return Response::success(['user' => $user]);  // JSON response
 
 ## Configuration
 
-### Configuration File (`config/sentinel.php`)
+### Configuration File (`config/haven.php`)
 
 ```php
 return [
@@ -765,7 +765,7 @@ class TokenGuard implements GuardContract
 }
 ```
 
-Then register it in `config/sentinel.php`:
+Then register it in `config/haven.php`:
 
 ```php
 'guards' => [
@@ -819,7 +819,7 @@ $hasher = new PasswordHasher([
 
 ### Response Headers
 
-Sentinel's middleware adds security headers:
+Haven's middleware adds security headers:
 
 ```
 X-Content-Type-Options: nosniff
@@ -833,26 +833,26 @@ X-XSS-Protection: 1; mode=block
 
 ### Common Issues
 
-#### 1. "Sentinel not initialized" Error
+#### 1. "Haven not initialized" Error
 
-**Problem**: Sentinel's AuthManager isn't set when calling `auth()`.
+**Problem**: Haven's AuthManager isn't set when calling `auth()`.
 
-**Solution**: Ensure Sentinel is properly installed and the service provider is registered.
+**Solution**: Ensure Haven is properly installed and the service provider is registered.
 
 ```bash
-composer require luxid/sentinel
-php juice sentinel:install
+composer require luxid/haven
+php juice haven:install
 ```
 
 #### 2. "Unknown column 'remember_token'" Error
 
-**Problem**: Migration ran before Sentinel installation.
+**Problem**: Migration ran before Haven installation.
 
 **Solution**: Rollback and reinstall:
 
 ```bash
 php juice db:rollback
-php juice sentinel:install --force
+php juice haven:install --force
 php juice db:migrate
 ```
 
@@ -908,7 +908,7 @@ Check error logs:
 tail -f /tmp/php-errors.log
 ```
 
-Enable Sentinel debug output:
+Enable Haven debug output:
 
 ```php
 // In SessionGuard.php temporarily
@@ -921,14 +921,14 @@ error_log("Session data: " . json_encode($_SESSION));
 
 ### 1. Use the Auth Helper
 
-Always use the `auth()` helper instead of static `Sentinel::` calls:
+Always use the `auth()` helper instead of static `Haven::` calls:
 
 ```php
 // ✅ Good
 auth()->user();
 
 // ❌ Avoid if possible
-Sentinel::user();
+Haven::user();
 ```
 
 ### 2. Protect Routes Properly
@@ -1093,7 +1093,7 @@ Only enable remember tokens for trusted devices and use secure token storage.
 
 ## Conclusion
 
-Luxid Sentinel provides a complete, secure, and developer-friendly authentication system for Luxid applications. With its clean API, modern architecture, and deep integration with Luxid's ecosystem, you can quickly add authentication to your applications with minimal code.
+Luxid Haven provides a complete, secure, and developer-friendly authentication system for Luxid applications. With its clean API, modern architecture, and deep integration with Luxid's ecosystem, you can quickly add authentication to your applications with minimal code.
 
 ### Key Takeaways
 

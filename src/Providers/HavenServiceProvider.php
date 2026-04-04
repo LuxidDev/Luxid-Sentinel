@@ -1,13 +1,13 @@
 <?php
 
-namespace Luxid\Sentinel\Providers;
+namespace Luxid\Haven\Providers;
 
 use Luxid\Foundation\Application;
-use Luxid\Sentinel\AuthManager;
-use Luxid\Sentinel\PasswordHasher;
-use Luxid\Sentinel\Sentinel;
+use Luxid\Haven\AuthManager;
+use Luxid\Haven\PasswordHasher;
+use Luxid\Haven\Haven;
 
-class SentinelServiceProvider
+class HavenServiceProvider
 {
   public function register(Application $app): void
   {
@@ -15,15 +15,15 @@ class SentinelServiceProvider
     $this->registerPasswordHasher($app);
     $this->registerAuthManager($app);
 
-    // Set Sentinel's manager during register phase
-    if (isset($GLOBALS['sentinel_auth_manager'])) {
-      Sentinel::setManager($GLOBALS['sentinel_auth_manager']);
+    // Set Haven's manager during register phase
+    if (isset($GLOBALS['haven_auth_manager'])) {
+      Haven::setManager($GLOBALS['haven_auth_manager']);
     }
   }
 
   public function boot(Application $app): void
   {
-    $authManager = Sentinel::getManager();
+    $authManager = Haven::getManager();
 
     // Register the auth manager with the application
     $app->registerAuth($authManager);
@@ -49,27 +49,27 @@ class SentinelServiceProvider
       ],
     ];
 
-    $configPath = $app::$ROOT_DIR . '/config/sentinel.php';
+    $configPath = $app::$ROOT_DIR . '/config/haven.php';
     if (file_exists($configPath)) {
       $userConfig = require $configPath;
       $config = array_merge($config, $userConfig);
     }
 
-    $GLOBALS['sentinel_config'] = $config;
+    $GLOBALS['haven_config'] = $config;
   }
 
   protected function registerPasswordHasher(Application $app): void
   {
     $hasher = new PasswordHasher();
-    $GLOBALS['sentinel_hasher'] = $hasher;
+    $GLOBALS['haven_hasher'] = $hasher;
   }
 
   protected function registerAuthManager(Application $app): void
   {
-    $config = $GLOBALS['sentinel_config'] ?? [];
-    $hasher = $GLOBALS['sentinel_hasher'] ?? new PasswordHasher();
+    $config = $GLOBALS['haven_config'] ?? [];
+    $hasher = $GLOBALS['haven_hasher'] ?? new PasswordHasher();
 
     $authManager = new AuthManager($app, $hasher, $config);
-    $GLOBALS['sentinel_auth_manager'] = $authManager;
+    $GLOBALS['haven_auth_manager'] = $authManager;
   }
 }

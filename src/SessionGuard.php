@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luxid\Sentinel;
+namespace Luxid\Haven;
 
 use Luxid\Http\SessionInterface;
 use Luxid\Contracts\Auth\Guard as GuardContract;
@@ -11,8 +11,8 @@ use RuntimeException;
 
 class SessionGuard implements GuardContract
 {
-  protected const SESSION_USER_KEY = 'sentinel_user_id';
-  protected const SESSION_REMEMBER_KEY = 'sentinel_remember_token';
+  protected const SESSION_USER_KEY = 'haven_user_id';
+  protected const SESSION_REMEMBER_KEY = 'haven_remember_token';
 
   protected ?AuthenticatableContract $user = null;
   protected bool $loggedOut = false;

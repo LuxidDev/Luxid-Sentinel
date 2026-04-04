@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luxid\Sentinel;
+namespace Luxid\Haven;
 
 use Luxid\Foundation\Application;
 use Luxid\Contracts\Auth\AuthManager as AuthManagerContract;

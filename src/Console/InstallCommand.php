@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Luxid\Sentinel\Console;
+namespace Luxid\Haven\Console;
 
 use Luxid\Console\Command;
 
 class InstallCommand extends Command
 {
-  protected string $description = 'Install Sentinel authentication package';
+  protected string $description = 'Install Haven authentication package';
 
   protected string $stubsPath;
   protected string $projectRoot;
@@ -25,12 +25,12 @@ class InstallCommand extends Command
   {
     $this->parseArguments($argv);
 
-    $this->line('🔐 Installing Luxid Sentinel...');
+    $this->line('🔐 Installing Luxid Haven...');
     $this->line('');
 
     try {
       if ($this->isInstalled() && !$this->shouldForce()) {
-        $this->warning('Sentinel appears to be already installed.');
+        $this->warning('Haven appears to be already installed.');
         if (!$this->confirm('Do you want to reinstall? This may overwrite existing files.')) {
           $this->line('Installation cancelled.');
           return 0;
@@ -43,10 +43,10 @@ class InstallCommand extends Command
       $this->generateAuthAction();
       $this->registerRoutes();
 
-      $this->success('Sentinel installed successfully!');
+      $this->success('Haven installed successfully!');
       $this->line('');
       $this->line('📋 Next steps:');
-      $this->line('   1. Review config/sentinel.php');
+      $this->line('   1. Review config/haven.php');
       $this->line('   2. Run: php juice db:migrate');
       $this->line('   3. Test your auth endpoints:');
       $this->line('      POST   /auth/register');
@@ -64,7 +64,7 @@ class InstallCommand extends Command
 
   protected function isInstalled(): bool
   {
-    return file_exists($this->projectRoot . '/config/sentinel.php') ||
+    return file_exists($this->projectRoot . '/config/haven.php') ||
       file_exists($this->projectRoot . '/app/Entities/User.php');
   }
 
@@ -77,8 +77,8 @@ class InstallCommand extends Command
   {
     $this->line('📄 Publishing configuration...');
 
-    $source = $this->stubsPath . '/sentinel.php.stub';
-    $target = $this->projectRoot . '/config/sentinel.php';
+    $source = $this->stubsPath . '/haven.php.stub';
+    $target = $this->projectRoot . '/config/haven.php';
 
     $this->ensureDirectory(dirname($target));
 
@@ -94,7 +94,7 @@ class InstallCommand extends Command
     );
 
     if (file_put_contents($target, $content)) {
-      $this->info('✓ Config published: config/sentinel.php');
+      $this->info('✓ Config published: config/haven.php');
     } else {
       throw new \RuntimeException('Failed to publish config file.');
     }
@@ -220,7 +220,7 @@ class InstallCommand extends Command
 
     $authRoutes = <<<'PHP'
 
-// Authentication Routes (Sentinel)
+// Authentication Routes (Haven)
 route('auth.register')
     ->post('/auth/register')
     ->uses(\App\Actions\AuthAction::class, 'register')

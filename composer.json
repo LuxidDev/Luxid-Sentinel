@@ -9,7 +9,7 @@
     "auth",
     "session",
     "guard",
-    "sentinel"
+    "haven"
   ],
   "authors": [
     {
@@ -24,7 +24,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Luxid\\Sentinel\\": "src/"
+      "Luxid\\Haven\\": "src/"
     },
     "files": [
       "src/Support/helpers.php"
@@ -41,10 +41,10 @@
   "extra": {
     "luxid": {
       "providers": [
-        "Luxid\\Sentinel\\Providers\\SentinelServiceProvider"
+        "Luxid\\Haven\\Providers\\HavenServiceProvider"
       ],
       "commands": {
-        "sentinel:install": "Luxid\\Sentinel\\Console\\InstallCommand"
+        "haven:install": "Luxid\\Haven\\Console\\InstallCommand"
       }
     }
   },

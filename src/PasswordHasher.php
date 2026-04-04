@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Luxid\Sentinel;
+namespace Luxid\Haven;
 
 use RuntimeException;
 
@@ -12,7 +12,7 @@ use RuntimeException;
  * Wraps PHP's native password_hash and password_verify functions
  * with consistent error handling and future-proofing for algorithm updates.
  *
- * @package Luxid\Sentinel
+ * @package Luxid\Haven
  */
 class PasswordHasher
 {
