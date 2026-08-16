@@ -4,59 +4,46 @@ declare(strict_types=1);
 
 namespace Luxid\Haven\Middleware;
 
+use Luxid\Contracts\Auth\AuthManager;
+use Luxid\Exceptions\UnauthorizedException;
+use Luxid\Foundation\Application;
 use Luxid\Middleware\BaseMiddleware;
-use Luxid\Haven\AuthManager;
-use Luxid\Http\Response;
-use Luxid\Exceptions\ForbiddenException;
 
 /**
- * Middleware to require authentication for routes.
+ * Requires an authenticated user.
  *
- * Protects routes by checking if a user is authenticated.
- * Returns JSON 401 for API requests or throws ForbiddenException for web requests.
+ * Rejection is signalled by throwing, which lets the kernel render the failure
+ * in the right format and flush it. The previous implementation built a 401
+ * body, discarded it and called `exit`, so the client received a blank 200.
  *
  * @package Luxid\Haven\Middleware
  */
 class RequireAuth extends BaseMiddleware
 {
-  /**
-   * Create a new RequireAuth middleware.
-   *
-   * @param AuthManager $auth Authentication manager
-   * @param Response $response Response instance
-   */
-  public function __construct(
-    protected AuthManager $auth,
-    protected Response $response
-  ) {}
-
-  /**
-   * Execute the middleware.
-   *
-   * @return void
-   *
-   * @throws ForbiddenException If user is not authenticated
-   */
-  public function execute(): void
-  {
-    if ($this->auth->check()) {
-      return;
+    /**
+     * @param AuthManager|null $auth Auth manager, or null to resolve from the kernel
+     */
+    public function __construct(protected ?AuthManager $auth = null)
+    {
     }
 
-    $path = $_SERVER['REQUEST_URI'] ?? '/';
-    $acceptHeader = $_SERVER['HTTP_ACCEPT'] ?? '';
-    $isApiRequest = strpos($path, '/api/') === 0 ||
-      strpos($acceptHeader, 'application/json') !== false;
+    /**
+     * Reject the request unless a user is signed in.
+     *
+     * @throws UnauthorizedException When no user is signed in
+     */
+    public function execute(): void
+    {
+        $auth = $this->auth ?? Application::$app->auth;
 
-    if ($isApiRequest) {
-      $this->response->json([
-        'success' => false,
-        'message' => 'Unauthenticated. Please log in.',
-        'error' => 'Authentication required'
-      ], 401);
-      exit;
+        if ($auth !== null && $auth->check()) {
+            return;
+        }
+
+        if ($auth === null && Application::$app->user !== null) {
+            return;
+        }
+
+        throw new UnauthorizedException('Unauthenticated. Please log in.');
     }
-
-    throw new ForbiddenException('You must be logged in to access this page.');
-  }
 }
