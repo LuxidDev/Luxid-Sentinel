@@ -75,6 +75,23 @@ class PasswordHasher
   }
 
   /**
+   * Burn roughly the time a real verification costs.
+   *
+   * Called when no user matched a sign-in attempt. Without it, a failed lookup
+   * returns immediately while a wrong password pays for a bcrypt comparison,
+   * and that difference tells an attacker which addresses have accounts.
+   */
+  public function fake(): void
+  {
+    // A pre-computed hash of a constant, verified against a value that never
+    // matches, so the cost is paid without leaking anything.
+    password_verify(
+      'luxid-haven-timing-equalizer',
+      '$2y$12$C6UzMDM.H6dfI/f/IKcEe.tG5cVoo1QSAUAiUlEeu4T4Cz3fL9Xdi'
+    );
+  }
+
+  /**
    * Check if the given hash has been hashed using the given options.
    *
    * @param string $hashedValue Hashed password
