@@ -1,54 +1,75 @@
 {
-  "name": "luxid/haven",
-  "description": "Session-based authentication package for Luxid PHP Framework",
-  "type": "library",
-  "license": "MIT",
-  "keywords": [
-    "luxid",
-    "authentication",
-    "auth",
-    "session",
-    "guard",
-    "haven"
-  ],
-  "authors": [
-    {
-      "name": "Jhay",
-      "email": "jhay@luxid.dev"
-    }
-  ],
-  "require": {
-    "php": "^8.0",
-    "luxid/engine": "^0.7.7",
-    "luxid/rocket": "^0.2.2"
-  },
-  "autoload": {
-    "psr-4": {
-      "Luxid\\Haven\\": "src/"
-    },
-    "files": [
-      "src/Support/helpers.php"
-    ]
-  },
-  "scripts": {
-    "post-install-cmd": [
-      "@php bin/generate-bridge.php"
+    "name": "luxid/haven",
+    "description": "Session-based authentication package for Luxid PHP Framework",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "luxid",
+        "authentication",
+        "auth",
+        "session",
+        "guard",
+        "haven"
     ],
-    "post-update-cmd": [
-      "@php bin/generate-bridge.php"
+    "authors": [
+        {
+            "name": "Jhay",
+            "email": "jhay@luxid.dev"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "luxid/engine": "^0.8",
+        "luxid/rocket": "^0.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Luxid\\Haven\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "luxid": {
+            "providers": [
+                "Luxid\\Haven\\Providers\\HavenServiceProvider"
+            ],
+            "commands": {
+                "haven:install": "Luxid\\Haven\\Console\\InstallCommand"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require-dev": {
+        "phpunit/phpunit": "^10.5 || ^11.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Luxid\\Haven\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../Engine",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "../Rocket-ORM",
+            "options": {
+                "symlink": true
+            }
+        }
     ]
-  },
-  "extra": {
-    "luxid": {
-      "providers": [
-        "Luxid\\Haven\\Providers\\HavenServiceProvider"
-      ],
-      "commands": {
-        "haven:install": "Luxid\\Haven\\Console\\InstallCommand"
-      }
-    }
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
 }
-
