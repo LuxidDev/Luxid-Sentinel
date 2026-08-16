@@ -106,12 +106,17 @@ class AuthManager implements AuthManagerContract
     }
 
     return match ($config['driver'] ?? 'session') {
+      // Resolved through getSession() rather than the property: the kernel
+      // populates the session lazily, so the property is still null when a
+      // guard is built during boot.
       'session' => new SessionGuard(
-        $this->app->session,
+        $this->app->getSession(),
         $this->hasher,
         $provider
       ),
-      default => throw new RuntimeException("Unsupported auth driver [{$config['driver']}]."),
+      default => throw new RuntimeException(
+        sprintf('Unsupported auth driver [%s].', $config['driver'] ?? 'session')
+      ),
     };
   }
 
