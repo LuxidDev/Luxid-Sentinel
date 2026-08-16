@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d2f409c326ed3b431f74c2156751d8a4",
+    "content-hash": "d74bdfda3877ce760fc5c4c01bae3b51",
     "packages": [
         {
             "name": "fakerphp/faker",
@@ -133,11 +133,11 @@
         },
         {
             "name": "luxid/engine",
-            "version": "0.8.0",
+            "version": "0.8.1",
             "dist": {
                 "type": "path",
                 "url": "../Engine",
-                "reference": "9cbd546087ab215e1e285dbff26ee166550062a1"
+                "reference": "bcd9563ad6845a746f1a74a9d8b49e0e5a907256"
             },
             "require": {
                 "luxid/rocket": "^0.3",
@@ -198,11 +198,11 @@
         },
         {
             "name": "luxid/rocket",
-            "version": "0.3.0",
+            "version": "0.3.1",
             "dist": {
                 "type": "path",
                 "url": "../Rocket-ORM",
-                "reference": "feb59bdd124a2e85db9adcb6c0aea3b82731e9cf"
+                "reference": "d52f9481d0a622119c74788fb2c82bb0003d3019"
             },
             "require": {
                 "ext-pdo": "*",
